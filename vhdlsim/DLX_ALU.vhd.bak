@@ -1,0 +1,16 @@
+library IEEE;
+use IEEE.std_logic_1164.all;
+use work.myTypes.all;
+
+ENTITY DLX_ALU is
+  PORT(
+    OP: in ALUOP;
+    A: in REGISTER_CONTENT;
+    B: in REGISTER_CONTENT;
+    Y: out REGISTER_CONTENT;
+    FLAGS: out ALU_FLAGS;
+    Y_extended: out REGISTER_CONTENT
+)
+END DLX_ALU;
+
+
