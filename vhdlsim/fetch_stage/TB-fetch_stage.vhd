@@ -1,6 +1,7 @@
 LIBRARY ieee;
 USE ieee.std_logic_1164.all;
 USE work.myTypes.all;
+USE work.opcodes.all;
 
 ENTITY TB_FETCH_STAGE IS
 END TB_FETCH_STAGE;
@@ -41,16 +42,16 @@ BEGIN
   FALLBACK_ADDRESS <= (OTHERS => '1');
   OLD_ALU_FLAGS <= "1" -- Zero flag is active
 
-  INST(IR_SIZE-OP_CODE_SIZE-1 downto 0) <= (4 => '1', OTHERS => '0'); -- Relative jmps are of +32
   INST(IR_SIZE-1 downto IR_SIZE-OPCODE_SIZE) <= DRIVEN_INST;
   PROCESS BEGIN
+    INST(IR_SIZE-OP_CODE_SIZE-1 downto 0) <= (4 => '1', OTHERS => '0'); -- Relative jmps are of +32
     --phase shift on the clock
     wait for 5 ns;
     wait for 20 ns;
     RESET <= '1';
 
     --We put some add first..
-    DRIVEN_INST <= CODE_ITYPE_ADD1  ;
+    DRIVEN_INST <= OPCODE_ADD  ;
 
     wait for 60 ns;
 
@@ -58,17 +59,24 @@ BEGIN
     DRIVEN_INST <= "000010";
     --Jmp propagates and real address will be computed..
     wait for 20 ns;
-    DRIVEN_INST <= CODE_ITYPE_ADD1;
+    DRIVEN_INST <= OPCODE_ADD;
     wait for 80 ns;
 
     --Jz - taken
     DRIVEN_INST <= "000100";
     wait for 20 ns;
-    DRIVEN_INST <= CODE_ITYPE_ADD1;
+    DRIVEN_INST <= OPCODE_ADD;
     wait for 80 ns;
     DRIVEN_INST <= "000101";
     wait for 20 ns;
-    DRIVEN_INST <= CODE_ITYPE_ADD1;
+    DRIVEN_INST <= OPCODE_LH;
+    INST(IR_SIZE-OP_CODE_SIZE-1 downto 0) <= "00001000010000000000000000"; -- MOV R1, [R1]
+    wait for 20 ns;
+    DRIVEN_INST <= CODE_ITYPE_ADD1; -- ADD R1, R1, 0;
+    wait for 20 ns;
+    DRIVEN_INST <= CODE_ITYPE_ADD1; -- ADD R1, R1, 0;
     wait;
+
   END PROCESS;
+    INST(IR_SIZE-OP_CODE_SIZE-1 downto 0) <= (4 => '1', OTHERS => '0'); -- Relative jmps are of +32
 END ARCHITECTURE;
