@@ -17,7 +17,7 @@ ENTITY DLX_ALU is
 END DLX_ALU;
 
 ARCHITECTURE structural OF DLX_ALU is
-  signal A_in, B_in, the_result: REGISTER_CONTENT;
+  signal A_in, B_in, the_result, allatzero: REGISTER_CONTENT;
   signal shiftout, logicout, lhout, logiclhout, intout: REGISTER_CONTENT;
   signal opselection: MUX_GENERIC_INPUT(3 downto 0, REGISTER_SIZE-1 downto 0);
   signal mustchangetolh: std_logic;
@@ -60,11 +60,12 @@ begin
 
   Y <= the_result;
 
+  allatzero <= (OTHERS => '0');
   process(the_result) begin
-    IF (the_result=(OTHERS => '0')) THEN
-      ALU_FLAGS(0) <= '1';
+    IF (the_result=allatzero) THEN
+      FLAGS(0) <= '1';
     ELSE
-      ALU_FLAGS(0) <= '0';
+      FLAGS(0) <= '0';
     END IF;
   end process;
 
