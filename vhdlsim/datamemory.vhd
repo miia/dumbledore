@@ -38,8 +38,6 @@ begin
     
     if (RESET='1') then
         REGISTERS(REG_ADDR) := (others=>(others=>'0')); --reset content of ALL registers
-        --OUT1 <= (others=>'0'); --reset outputs as well
-        --OUT2 <= (others=>'0');
     else
         if (ENABLE='1') then
             if (WR='1') then --WRITE HAS PRIORITY over read operations.
