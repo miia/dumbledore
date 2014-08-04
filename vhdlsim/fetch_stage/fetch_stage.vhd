@@ -11,6 +11,8 @@ ENTITY FETCH_STAGE IS
     RDMEM: out std_logic;
     RDADDR: out CODE_ADDRESS;
     INST: in INSTRUCTION;
+
+    FETCHED_INST: out INSTRUCTION;
     NOT_JMP_TAKEN: in std_logic; -- This one goes to the CU, which will decide how to compute the new address in case of wrong prediction (in this case, it will send to the ALU the fallback components of the fallback address
     -- Not needed anymore? I'm mergine BPU *and* related registers **and* checks of right/wrong prediction *into* fetch stage PC: out CODE_ADDRESS
     FLUSH_PIPELINE: out std_logic; -- As before, this is needed for the merge; could be smart
@@ -27,9 +29,13 @@ ARCHITECTURE STRUCTURAL OF FETCH_STAGE IS
   signal the_pc:  CODE_ADDRESS_STRETCHED;
   signal the_prediction, had_wrong_prediction: std_logic;
   signal flags_tocheck, flags_tocheck_d: ALU_FLAGS;
-  signal not_check, no_check_d: std_logic;
+  signal not_check_notgated, not_check, no_check_d: std_logic;
   signal tobedelayed: std_logic_vector(1 downto 0);
   signal rst_pipe_vector: std_logic_vector(0 downto 0);
+
+  signal bubble, clk_bubblegated: std_logic;
+  signal old_ir, real_ir: INSTRUCTION;
+  signal old_ir_is_a_load, olddest_newsource, olddest_newsource2, bubbleforsource2, source2exists: std_logic; -- Results of comparisons of pieces of new and old IR
 
 BEGIN
 
@@ -39,7 +45,7 @@ BEGIN
   PORT MAP(
     IMMEDIATE => FALLBACK_ADDRESS;
     NEW_VALUE =>	std_logic_vector(WIDTH-1 downto 0),
-		CLK => CLK,
+		CLK => clk_bubblegated,
 		RESET => RESET,
     ACC_ENABLE => '0', -- Active low
 		ACC_JMP => the_prediction,
@@ -52,9 +58,12 @@ BEGIN
     CLK => CLK,
     OPCODE => opcodeof(INST),
     PRED => the_prediction,
-    NO_CHECK => not_check;
+    NO_CHECK => not_check_notgated;
   );
 
+  ---------------------------------------------------------------------------------------------------------------------
+  -- BRANCH SUPPORT/PREDICTION
+  ---------------------------------------------------------------------------------------------------------------------
   --In this processor, this is what to check: note that must check ZEROFLAG=1 iff (jz && pred) || (jnz && !pred) 
   flags_tocheck(0) <= opcodeof(INST)(0) xor the_prediction;
 
@@ -105,5 +114,30 @@ BEGIN
 	);
 
   FLUSH_PIPELINE <= rst_pipe_vector(0) or had_wrong_prediction;
+
+  ---------------------------------------------------------------------------------------------------------------------
+  -- Pipeline stall/support
+  ---------------------------------------------------------------------------------------------------------------------
+  oldirkeeper: ENTITY work.REG_GENERIC
+  GENERIC MAP(WIDTH => 1) PORT MAP(D=>real_ir, CK => CLK, RESET => RESET, Q => old_ir);
+
+  old_ir_is_a_load <= old_ir(IR_SIZE-1) and (not old_ir(IR_SIZE-2)) and (not old_ir(IR_SIZE-3)); -- Loads are 100xxx
+
+  --Every instruction has at least 1 source register (with the exception of jmp). So we check it every time (TODO check if jmp? minimal change in benefits/cost)
+  olddest_newsource <= '1' when old_ir(IR_SIZE-OP_CODE_SIZE-REG_ADDRESS_SIZE-1 downto IR_SIZE-OP_CODE_SIZE-REG_ADDRESS_SIZE-REG_ADDRESS_SIZE)=INST(IR_SIZE-OP_CODE_SIZE-1 downto IR_SIZE-OP_CODE_SIZE-REG_ADDRESS_SIZE) else '0';
+
+  --Check if Dest of the load is equal to S2 of a register instruction
+  olddest_newsource2 <= '1' when old_ir(IR_SIZE-OP_CODE_SIZE-REG_ADDRESS_SIZE-1 downto IR_SIZE-OP_CODE_SIZE-REG_ADDRESS_SIZE-REG_ADDRESS_SIZE)=INST(IR_SIZE-OP_CODE_SIZE-REG_ADDRESS_SIZE-1 downto IR_SIZE-OP_CODE_SIZE-REG_ADDRESS_SIZE-REG_ADDRESS_SIZE) else '0';
+  bubbleforsource2 <= '1' when olddest_newsource2='1' and opcodeof(INST)=CODE_RTYPE_ADD else '0';
+
+  bubble <= old_ir_is_a_load nand (olddest_newsource or bubbleforsource2); -- Nand because bubble is active low
+
+  select_real_ir: ENTITY work.MUX21_GENERIC
+  GENERIC MAP(WIDTH => IR_SIZE) PORT MAP(A => INST, B => ((IR_SIZE-1 downto IR_SIZE-OP_CODE_SIZE-1) => CODE_NTYPE_NOP, OTHERS => '0'), S => bubble, Y => real_ir);
+  --Don't change PC if there's a bubble
+  clk_bubblegated <= CLK and bubble;
+  --Don't make predictions if there's a bubble
+  not_check <= not_check_notgated and bubble;
+  ---------------------------------------------------------------------------------------------------------------------
 
 end ARCHITECTURE;
