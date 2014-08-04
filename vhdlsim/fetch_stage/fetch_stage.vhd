@@ -19,7 +19,7 @@ ENTITY FETCH_STAGE IS
     OLD_ALU_FLAGS: in ALU_FLAGS;
 
   --What to replace the PC with in case of wrong prediction
-    FALLBACK_ADDRESS: in CODE_ADDRESS;
+    FALLBACK_ADDRESS: in CODE_ADDRESS
   );
 END FETCH_STAGE;
 
@@ -37,8 +37,8 @@ BEGIN
   RDADDR <= the_pc & "00";
   pcmanager: entity work.PC_ACC 
   PORT MAP(
-    IMMEDIATE => 	In	std_logic_vector(WIDTH-1 downto 0),
-    NEW_VALUE => 	In	std_logic_vector(WIDTH-1 downto 0),
+    IMMEDIATE => FALLBACK_ADDRESS;
+    NEW_VALUE =>	std_logic_vector(WIDTH-1 downto 0),
 		CLK => CLK,
 		RESET => RESET,
     ACC_ENABLE => '0', -- Active low
