@@ -13,9 +13,8 @@ architecture BEHAVIORAL of FA is
 
 begin
 
-  S <= A xor B xor Ci ;
+  S <= (A xor B) xor Ci ;
   Co <= (A and B) or (B and Ci) or (A and Ci) ;
-  -- Co <= (A and B) or (B and Ci) or (A and Ci);
   
 end BEHAVIORAL;
 
