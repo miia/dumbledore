@@ -20,7 +20,7 @@ package myTypes is
     subtype ALU_FLAGS is std_logic_vector(ALU_FLAGS_SIZE-1 downto 0);
     subtype INSTRUCTION is std_logic_vector(IR_SIZE -1 downto 0);
     subtype REG_ADDRESS is std_logic_vector(REG_ADDRESS_SIZE-1 downto 0);
-
+    subtype IMM16 is std_logic_vector(15 downto 0);
     constant REGISTER_SIZE: integer := 32;
     subtype REGISTER_CONTENT is std_logic_vector(REGISTER_SIZE-1 downto 0);
 
@@ -121,12 +121,13 @@ package myTypes is
     constant FUNC_AND: FUNC := (FUNC_SIZE-1 => '1', FUNC_SIZE-2 =>'0', OTHERS => '0');
     constant FUNC_OR: FUNC := (FUNC_SIZE-1 => '1', FUNC_SIZE-2 =>'1', OTHERS => '0');
 
+   constant A_NOP: INSTRUCTION := CODE_NTYPE_NOP & "00000000000000000000000000";
     function optype(opcode: CODE) return INST_TYPE ;
 
   function r1of(inst: INSTRUCTION) return REG_ADDRESS;
   function r2of(inst: INSTRUCTION) return REG_ADDRESS;
   function r3of(inst: INSTRUCTION) return REG_ADDRESS;
-
+   function imm16of(inst: INSTRUCTION) return IMM16;
   function functionof(inst: INSTRUCTION) return FUNC;
   function opcodeof(inst: INSTRUCTION) return CODE;
 
@@ -160,7 +161,14 @@ package body myTypes is
     puppa:= inst(10+REG_ADDRESS_SIZE downto 11);
     return puppa;
   end r3of;
-
+    
+   function imm16of(inst: INSTRUCTION) return IMM16 is
+   variable puppa: std_logic_vector(15 downto 0);
+   begin
+     puppa:= inst(15 downto 0);
+     return puppa;
+   end imm16of;
+  
   function functionof(inst: INSTRUCTION) return FUNC is --gets FUNCTION bits from instruction
   begin
     return inst(FUNC_SIZE-1 downto 0);
