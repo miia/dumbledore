@@ -23,7 +23,7 @@ signal clk_gated: std_logic;
 
 begin
     
-clk_gated <= CLK and (not ACC_ENABLE); --register can change value only if acc_en_n is '1' (acc_en is '0')
+--clk_gated <= CLK and (not ACC_ENABLE); --register can change value only if acc_en_n is '1' (acc_en is '0')
 Y <= feed_back; --connect feedback and Y signals
 
 -- Ci <= 1, so PC=PC+1+imm or PC=PC+1+0; as code addresses are always *4, PC=PC+4+imm of PC=PC+4+0
@@ -53,14 +53,15 @@ mux_overwrite : ENTITY work.MUX21_GENERIC
 	);
 	
 	   
-reg_pc : ENTITY work.REG_GENERIC
+reg_pc : ENTITY work.REG_GENERIC_ENABLED
   generic map(
 	  WIDTH => WIDTH
 	)
 	port map(
 	  D => out_mux_overwrite,
-		CK => clk_gated, --register can change value only if acc_en_n is '1' (acc_enable is '')
+		CK => CLK, --register can change value only if acc_en_n is '1' (acc_enable is active low)
 		RESET => RESET,
+    ENABLE => ACC_ENABLE,
 		Q => feed_back
 	);
 	
