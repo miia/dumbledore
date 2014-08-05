@@ -28,6 +28,10 @@ package myTypes is
     subtype CODE_ADDRESS is std_logic_vector(CODE_ADDRESS_SIZE-1 downto 0);
     subtype CODE_ADDRESS_STRETCHED is std_logic_vector(CODE_ADDRESS_SIZE-2-1 downto 0);
 
+    constant DATA_ADDRESS_SIZE : integer := 32;
+    subtype DATA_ADDRESS is std_logic_vector(DATA_ADDRESS_SIZE-1 downto 0);
+    subtype DATA_ADDRESS_STRETCHED is std_logic_vector(DATA_ADDRESS_SIZE-2-1 downto 0);
+
 -- R-Type instruction -> FUNC field
     constant RTYPE_ADD : std_logic_vector(FUNC_SIZE - 1 downto 0) :=  "00000000000";    -- ADD RS1,RS2,RD
     constant RTYPE_SUB : std_logic_vector(FUNC_SIZE - 1 downto 0) :=  "00000000001";    -- SUB RS1,RS2,RD

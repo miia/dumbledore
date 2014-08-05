@@ -30,6 +30,9 @@ ENTITY DLX_DATAPATH IS
  -- MEM/WB Control Signals
  RM            : in std_logic;  -- Data RAM Read Enable
  WM            : in std_logic;  -- Data RAM Write Enable
+ SIGN           : in std_logic; -- Data read unsigned/signed
+ LH             : in std_logic; -- Read/write half word
+ LB             : in std_logic; -- Read/write single byte (must be LH==LB==1 to read a byte)
  EN3            : in std_logic;  -- Data RAM Enable
  
  --Outputs for memory
@@ -150,9 +153,9 @@ BEGIN
 
   --MEM/WB PIPES - What is "OUT" needed to?
   --MEM/WB STAGE
-  memory: ENTITY work.DATA_MEMORY
-  GENERIC MAP(NREGS => 1024, REG_WIDTH => 32) PORT MAP(CLK => CLK, RESET => RESET, RD1 => RM, WR => WM, ENABLE => EN3, ADD_RD1 => pipe2aluout_out, ADD_WR => pipe2aluout_out, DATAIN => pipe2me_out, OUT1 => memory_out);
 
+  memory: ENTITY work.MEMORY_STAGE
+  PORT MAP(CLK => CLK, RESET => RESET, ADDR => pipe2aluout_out, RD_MEM => RM, WR => WM, SIGN => SIGN, LH => LH, LB => LB, DATAIN => pipe2me_out, DATA_OUT => memory_out);
   pipe3out: ENTITY work.REG_GENERIC
   GENERIC MAP(WIDTH => REGISTER_SIZE) PORT MAP(D => writeback_data, CK => CLK, RESET => RESET, Q => pipe3out_out);
 
