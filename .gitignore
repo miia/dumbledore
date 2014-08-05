@@ -3,3 +3,4 @@ vhdlsim/work/
 *.bak
 *~
 vhdlsim/transcript
+vsim.wlf
