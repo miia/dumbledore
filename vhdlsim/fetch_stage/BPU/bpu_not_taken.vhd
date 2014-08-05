@@ -8,22 +8,26 @@ BEGIN
   --New value is attached from the external
   process(OPCODE)
   begin
-    case OPCODE(OP_CODE_SIZE-1 downto OP_CODE_SIZE-4) is
-      when "0000" =>
+    case OPCODE is
+      when "000010" | "000011" =>
         --Unconditioned jmp
         PRED<='1';
         NO_CHECK <= '1';
-      when "0001" => 
+        FORCE_WRONG <= '0';
+      when "000100" | "000101" => 
         --Conditioned jr
         PRED<='0';
         NO_CHECK <= '0';
-      when "0100" => 
+        FORCE_WRONG <= '0';
+      when "010010" | "010011" => 
         --Predict WRONG (jr)
         PRED<='0';
-        NO_CHECK <= '1';
+        NO_CHECK <= '0';
+        FORCE_WRONG <= '1';
       when OTHERS =>
         PRED<='0';
         NO_CHECK <= '1';
+        FORCE_WRONG <= '0';
     end case;
   end process;
 END;

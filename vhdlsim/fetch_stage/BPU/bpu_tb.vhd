@@ -7,7 +7,7 @@ ENTITY BPU_TB IS
 END BPU_TB;
 
 ARCHITECTURE bahbievfb OF BPU_TB IS
-  signal pc: CODE_ADDRESS_STRETCHED := (OTHERS => '0');
+  signal pc: CODE_ADDRESS := (OTHERS => '0');
   signal clk: std_logic := '0';
   signal opcode: CODE := (OTHERS => '0');
   signal pred: std_logic;
