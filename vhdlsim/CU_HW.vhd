@@ -19,22 +19,33 @@ entity DLX_CU is
     OPCODE             : in CODE; --this input will be connected to the 6 Opcode bits of the IR
     FUNC_IN              : in FUNC; --this input will be conected to the 11 Function bits of the IR
     
+    -- IF Control Signals
+    PC_EN   : out std_logic;         -- Program Counter Latch Enable --TODO: ONLY USED IF REGISTERS HAVE "EN" INPUT
+    IR_LATCH_EN    : out std_logic;  -- Instruction Register Latch Enable --TODO: ONLY USED IF REGISTERS HAVE "EN" INPUT
+    NPC_LATCH_EN   : out std_logic;  -- NPC (NextProgramCounter) Register Latch Enable --TODO: ONLY USED IF REGISTERS HAVE "EN" INPUT
+
     -- ID Control Signals
     RF1      : out std_logic;  -- Register A Latch Enable
     RF2      : out std_logic;  -- Register B Latch Enable
-    EN1      : out std_logic;  -- Register file / Immediate Register Enable
+    EN1      : out std_logic;  -- Register file / Immediate Register Enable --TODO: ONLY USED IF REGISTERS HAVE "EN" INPUT
 
     -- EX Control Signals
     S1           : out std_logic;  -- MUX-A Sel
     S2           : out std_logic;  -- MUX-B Sel
-    ALU         : out ALUOP; -- ALU Operation Code
-    EN2      : out std_logic;  -- ALU Output Register Enable
+    ALU         : out ALUOP; -- ALU Operation Code (NOTE: ALUOP TYPE = 2 BITS)
+    EN2      : out std_logic;  -- ALU Output Register Enable --TODO: ONLY USED IF REGISTERS HAVE "EN" INPUT
     
-    -- MEM/WB Control Signals
-    RM            : out std_logic;  -- Data RAM Read Enable
-    WM            : out std_logic;  -- Data RAM Write Enable
-    EN3            : out std_logic;  -- Data RAM Enable
+    -- MEM Control Signals
+    RM            : out std_logic;  -- Data Memory Read Enable
+    WM            : out std_logic;  -- Data Memory Write Enable
+    EN3            : out std_logic;  -- Data Memory Enable
 
+    EN_LMD       : out std_logic;  -- LMD (Load-Memory-Data) Register Latch Enable (for register at output of Data Mem) --TODO: ONLY USED IF REGISTERS HAVE "EN" INPUT
+    LH            : out std_logic;  -- these 3 signals are used to tell the Data Memory whether we want to load a Byte, Half-Word or a Word...
+    LB            : out std_logic;
+    SIGN          : out std_logic;  -- ...and whether we want the value to be treated as signed (=> activate sign-extension) or not.
+
+    -- WB Control Signals
     S3         : out std_logic;  -- Write Back MUX Sel
     WF1              : out std_logic -- Register File Write Enable
   );
@@ -50,9 +61,12 @@ architecture CU_HW of DLX_CU is
   signal cw   : std_logic_vector(CW_SIZE-1 downto 0); -- all the control signals output by the CU to the pipeline stages of the datapath.
 
   -- control word is shifted to the correct stage - TODO: MODIFY THIS to reflect correct number and size of stages!!
-  signal cw1 : std_logic_vector(CW_SIZE-1 downto 0); -- all 13 control signals; a part (3) will go to first stage (ID), the rest (10) will go to the next pipeline register
-  signal cw2 : std_logic_vector(CW_SIZE-1-3 downto 0); -- 10 control signals; a part (5) will go to second stage (EX), the rest (5) will go to the next pipeline register
-  signal cw3 : std_logic_vector(CW_SIZE-1-3-5 downto 0); -- 5 control signals, which go directly to the third pipeline stage (MEM/WB)
+  signal cw0 : std_logic_vector(CW_SIZE-1 downto 0);         -- all 20 control signals; a part (3) will go to stage zero (IF), the rest (17) will go to the next pipeline register
+  signal cw1 : std_logic_vector(CW_SIZE-1-3 downto 0);       -- 17 control signals; a part (3) will go to stage one (ID), the rest (14) will go to the next pipeline register
+  signal cw2 : std_logic_vector(CW_SIZE-1-3-3 downto 0);     -- 14 control signals; a part (5) will go to stage two (EX), the rest (9) will go to the next pipeline register
+  signal cw3 : std_logic_vector(CW_SIZE-1-3-3-5 downto 0);   -- 9 control signals; a part (7) will go to stage three (MEM), the rest (2) will go to the next pipeline register
+  signal cw4 : std_logic_vector(CW_SIZE-1-3-3-5-7 downto 0); -- 2 control signals, which go directly to the last pipeline stage (WB)
+
 
   --signals for the control bits going to the ALU
   --signal aluOpcode_i: aluOp := NOP; -- ALUOP defined in package
@@ -64,56 +78,70 @@ architecture CU_HW of DLX_CU is
  
 begin  -- dlx_cu_hw architecture
 
-  IR_opcode <= OPCODE;--TODO: previously was IR_IN(31 downto 26);
-  IR_func <= FUNC_IN;--TODO: previously was IR_IN(FUNC_SIZE - 1 downto 0);
+  IR_opcode <= OPCODE;  -- previously was IR_IN(31 downto 26);
+  IR_func <= FUNC_IN;   -- previously was IR_IN(FUNC_SIZE - 1 downto 0);
 
   --NOTE: a part of the instruction is turned straight into control signals (immediate values, register file addresses) => they don't pass through the CU - they are just routed to their dedicated pipeline registers WITHOUT undergoing any transformation.
-  --the remaining bits of the IR 
-
-  --cw <= cw_mem(conv_integer(IR_opcode)); --HERE HAPPENS THE MAGIC - replace with a process that writes on cw when either IR_opcode or IR_func change (INCLUDING alu signals)
+  --the remaining bits of the IR are instead transformed into the corresponding activation signals by the CU.
 
   --Statically connecting signals from output of pipeline registers to the entity output ports (going to the datapath):
 
+  -- control signals for stage 0 (IF)
+  PC_EN        <= cw0(CW_SIZE-1 - 0);
+  IR_LATCH_EN  <= cw0(CW_SIZE-1 - 1);
+  NPC_LATCH_EN <= cw0(CW_SIZE-1 - 2);
+
   -- control signals for stage 1
-  RF1 <= cw1(CW_SIZE-1 - 0);
-  RF2 <= cw1(CW_SIZE-1 - 1);
-  EN1 <= cw1(CW_SIZE-1 - 2);
+  RF1 <= cw1(CW_SIZE-1-3 - 0);
+  RF2 <= cw1(CW_SIZE-1-3 - 1);
+  EN1 <= cw1(CW_SIZE-1-3 - 2);
 
   -- control signals for stage 2
-  S1  <= cw2(CW_SIZE-1-3 - 0);
-  S2  <= cw2(CW_SIZE-1-3 - 1);
-  ALU <= cw2(CW_SIZE-1-3 - 2 downto CW_SIZE-1-3 - 3); --the control signals for the ALU are composed of 2 bits
-  EN2 <= cw2(CW_SIZE-1-3 - 4);
+  S1  <= cw2(CW_SIZE-1-3-3 - 0);
+  S2  <= cw2(CW_SIZE-1-3-3 - 1);
+  ALU <= cw2(CW_SIZE-1-3-3 - 2 downto CW_SIZE-1-3 - 3); --NOTE: the control signals for the ALU are composed of TWO bits
+  EN2 <= cw2(CW_SIZE-1-3-3 - 4);
 
   -- control signals for stage 3
-  RM  <= cw3(CW_SIZE-1-3-5 - 0);
-  WM  <= cw3(CW_SIZE-1-3-5 - 1);
-  EN3 <= cw3(CW_SIZE-1-3-5 - 2);
-  
-  S3  <= cw3(CW_SIZE-1-3-5 - 3);
-  WF1 <= cw3(CW_SIZE-1-3-5 - 4);
+  RM  <= cw3(CW_SIZE-1-3-3-5 - 0);
+  WM  <= cw3(CW_SIZE-1-3-3-5 - 1);
+  EN3 <= cw3(CW_SIZE-1-3-3-5 - 2);
+
+  EN_LMD <= cw3(CW_SIZE-1-3-3-5 - 3);
+  LH     <= cw3(CW_SIZE-1-3-3-5 - 4);
+  LB     <= cw3(CW_SIZE-1-3-3-5 - 5);
+  SIGN   <= cw3(CW_SIZE-1-3-3-5 - 6);
+
+  -- control signals for stage 4
+  S3  <= cw3(CW_SIZE-1-3-3-5-7 - 0);
+  WF1 <= cw3(CW_SIZE-1-3-3-5-7 - 1);
 
 
+  ---------------------------------------------------------------------------------------------
+  -- Process to handle pipelining of control signals:                                        --
+  -- this process does NOT decide the CONTENT of signals output by the CU, just their TIMING.--
+  ---------------------------------------------------------------------------------------------
 
-  -- Handle pipelining of control signals:
-  -- this does NOT decide the CONTENT of signals output by the CU, just their TIMING.
   CW_PIPE: process (Clk, Rst)
   begin  -- process Clk
 
     if Rst = '0' then              -- asynchronous reset (active low)
+        cw0 <= (others => '0');
         cw1 <= (others => '0');
         cw2 <= (others => '0');
         cw3 <= (others => '0');
-        --cw4 <= (others => '0');
+        cw4 <= (others => '0');
         --cw5 <= (others => '0');
         --aluOpcode1 <= NOP;
         --aluOpcode2 <= NOP;
         --aluOpcode3 <= NOP;
     elsif Clk'event and Clk = '1' then  -- rising clock edge
 
-         cw1 <= cw;
-         cw2 <= cw1(CW_SIZE-1-3 downto 0);
-         cw3 <= cw2(CW_SIZE-1-3-5 downto 0);
+         cw0 <= cw;
+         cw1 <= cw0(CW_SIZE-1-3 downto 0);
+         cw2 <= cw1(CW_SIZE-1-3-3 downto 0);
+         cw3 <= cw2(CW_SIZE-1-3-3-5 downto 0);
+         cw4 <= cw3(CW_SIZE-1-3-3-5-7 downto 0);
 
          --aluOpcode1 <= aluOpcode_i;
          --aluOpcode2 <= aluOpcode1;
@@ -125,9 +153,11 @@ begin  -- dlx_cu_hw architecture
 
   --ALU_OPCODE <= aluOpcode3;
 
+   -----------------------------------------------
+   --Process to generate control signals for ALU--
+   -----------------------------------------------
 
-   --Process to generate control signals for ALU
-
+   --LEGEND:
    --Remember that (timing/pipelining apart) the meaning of each bit in the cw signal is:
    -- control signals for stage 1
    --cw(CW_SIZE-1 - 0) corresponds to RF1; (1 = read out of port1)
@@ -149,7 +179,7 @@ begin  -- dlx_cu_hw architecture
    begin
 	cw <= (others => '0'); -- default is NOP.
 
-	case optype(IR_opcode) is --look at type of instruction (most significant 2 bits)
+	case optype(IR_opcode) is --look at type of instruction (most significant 2 bits of IR_opcode)
 
 		when OP_INST_RTYPE =>
 		--instruction is R-type (=Register-Register ALU operations);
@@ -159,16 +189,18 @@ begin  -- dlx_cu_hw architecture
 
 			--decide value of ALU control bits:
 			case IR_func is --since the instruction is R-type, to decide the ALU activation signals we also need to look at the Function bits (=least significant 11 bits)
-				when FUNC_ADD => cw(CW_SIZE-1 - 5 downto CW_SIZE-1 - 6) <= "00";
-				when FUNC_SUB => cw(CW_SIZE-1 - 5 downto CW_SIZE-1 - 6) <= "01";
-				when FUNC_AND => cw(CW_SIZE-1 - 5 downto CW_SIZE-1 - 6) <= "10";
-				when FUNC_OR  => cw(CW_SIZE-1 - 5 downto CW_SIZE-1 - 6) <= "11";
+				when FUNC_ADD => cw(CW_SIZE-1 - 8 downto CW_SIZE-1 - 9) <= "00";  --TODO: THESE ACTIVATION SIGNALS (and also func_add, func_sub etc.) STILL HAVE TO BE DECIDED!!
+				when FUNC_SUB => cw(CW_SIZE-1 - 8 downto CW_SIZE-1 - 9) <= "01";
+				when FUNC_AND => cw(CW_SIZE-1 - 8 downto CW_SIZE-1 - 9) <= "10";
+				when FUNC_OR  => cw(CW_SIZE-1 - 8 downto CW_SIZE-1 - 9) <= "11";
 				-- in the future, other operations can be encoded by Function bits: they're 11 bits, we used only the first 2!!
 				when others => NULL; --leave default bits.
 			end case;
 
+                        --TODO: isn't the "case" statement below completely useless?? the following signals should always be the same for EVERY R-type operation...
+
 			--decide the rest of the control bits:
-			case IR_opcode is --and of course, as always, we need to look at the opcode.
+			case IR_opcode is --and, as always, we need to look at the content of the opcode part of the IR.
 				when CODE_RTYPE_ADD => cw(CW_SIZE-1 downto CW_SIZE-1 - 4) <= "11100"; --enable RF, read using both ports, muxes pass RF outputs
 						       cw(CW_SIZE-1 - 7 downto 0) <= "100011"; --enable EN2 register, do nothing with memory, mux passes EN2 register output, write back on RF.
             --REMAINING CASES ARE EQUIVALENT (the opcode field is always he same, it only specifies that the instruction is an arithmetic operation - the exact operation is specified in Function bits)
@@ -188,7 +220,7 @@ begin  -- dlx_cu_hw architecture
 
 			--decide all control bits by just looking at the Opcode field (even the ALU control bits: in this case, there is no Function field => they only depend on the Opcode field.)
 			case IR_opcode is
-				when CODE_ITYPE_ADD1 => cw <= "01110"&"00"&"100011";
+				when CODE_ITYPE_ADD1 => cw <= "01110"&"00"&"100011";  --TODO: THESE ACTIVATION SIGNALS STILL HAVE TO BE DECIDED!!
 				when CODE_ITYPE_SUB1 => cw <= "01110"&"01"&"100011";
 				when CODE_ITYPE_AND1 => cw <= "01110"&"10"&"100011";
 				when CODE_ITYPE_OR1  => cw <= "01110"&"11"&"100011";
@@ -208,6 +240,9 @@ begin  -- dlx_cu_hw architecture
 			end case;
 
 		-- any other instruction types in the future? (e.g. J-type)
+
+       		when OP_INST_JTYPE => NULL; --TODO: NULL for now... add activation signals for JMP instructions.
+
 
 		when others => NULL; -- leave the NOP as it is
 

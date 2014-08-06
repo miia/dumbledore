@@ -5,7 +5,7 @@ package myTypes is
 
 -- Control unit input sizes
     constant IR_SIZE : integer := 32; --size of the whole instruction (divided in [OPCODE, R1, R2, IMMEDIATE] or [OPCODE, R1, R2, R3, FUNC] )
-    constant CW_SIZE : integer := 13; --number of control signals output by the Control Unit
+    constant CW_SIZE : integer := 20; --number of control signals output by the Control Unit
     constant OP_CODE_SIZE : integer :=  6;                                              -- OPCODE field size
     constant REG_ADDRESS_SIZE: integer := 5;
     subtype CODE is std_logic_vector (OP_CODE_SIZE-1 downto 0);
