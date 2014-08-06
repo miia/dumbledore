@@ -1,3 +1,7 @@
+LIBRARY IEEE;
+use IEEE.std_logic_1164.ALL;
+use work.myTypes.ALL;
+
 ENTITY TB_MEMORY_STAGE IS
 END ENTITY;
 
@@ -9,12 +13,12 @@ ARCHITECTURE test OF TB_MEMORY_STAGE IS
     signal WR: std_logic;
     signal SIGN:  std_logic;
     signal LH:  std_logic;
-    signal LB:  std_logic
+    signal LB:  std_logic;
     signal DATA_IN:  std_logic_vector(31 downto 0);
     signal DATA_OUT: std_logic_vector(31 downto 0);
 BEGIN
   toTest: entity work.MEMORY_STAGE
-  PORT MAP(CLK => CLK, RESET => RESET; ADDR => ADDR, RD_MEM => RD_MEM, WR => WR, SIGN => SIGN, LH => LH, LB => LB, DATA_IN => DATA_IN, DATA_OUT => DATA_OUT);
+  PORT MAP(CLK => CLK, RESET => RESET, ADDR => ADDR, RD_MEM => RD_MEM, WR => WR, SIGN => SIGN, LH => LH, LB => LB, DATA_IN => DATA_IN, DATA_OUT => DATA_OUT);
 
   CLK <= not CLK after 10 ns;
 
@@ -26,6 +30,7 @@ BEGIN
     RD_MEM <= '0';
     WR <= '0';
     DATA_IN <= (OTHERS => '0');
+    SIGN <= '0';
     wait for 5 ns;
     RESET <= '1';
     wait for 40 ns;
@@ -34,12 +39,12 @@ BEGIN
     WR <= '1';
     LB <= '1';
     LH <= '1';
-    DATAIN(7 downto 0) <= "10101010";
+    DATA_IN(7 downto 0) <= "10101010";
     wait for 20 ns;
     -- Hw to 0x02
     ADDR(1 downto 0) <= "10";
     LB <= '0';
-    DATAIN(15 downto 0) <= "1111000000001111";
+    DATA_IN(15 downto 0) <= "1111000000001111";
     wait for 20 ns;
     -- Read a W from 0
     ADDR(1 downto 0) <= "00";
@@ -53,7 +58,7 @@ BEGIN
     -- Read HW with sign
     SIGN <= '1';
     LH <= '1';
-    ADDR(2 downto 0) <= "010"
+    ADDR(2 downto 0) <= "010";
     wait for 20 ns;
     --Read Byte with sign
     ADDR(0) <= '1';

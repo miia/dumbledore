@@ -1,5 +1,7 @@
 LIBRARY IEEE;
 use IEEE.std_logic_1164.ALL;
+use IEEE.numeric_std.ALL;
+use work.myTypes.ALL;
 
 ENTITY MEMORY_STAGE IS
   PORT(
@@ -10,9 +12,9 @@ ENTITY MEMORY_STAGE IS
     WR: 		IN std_logic;
     SIGN: in std_logic;
     LH: in std_logic;
-    LB: in std_logic
+    LB: in std_logic;
     DATA_IN: in std_logic_vector(31 downto 0);
-    DATA_OUT: out std_logic_vector(31 downto 0);
+    DATA_OUT: out std_logic_vector(31 downto 0)
   );
 END MEMORY_STAGE;
 
@@ -33,45 +35,48 @@ BEGIN
 
   process (CLK, RESET)
   begin
-  if (RESET='1') then
-      REGISTERS(REG_ADDR) := (others=>(others=>'0')); --reset content of ALL registers
+  if (RESET='0') then
+      REGISTERS(REG_ADDR) <= (others=>(others=>'0')); --reset content of ALL registers
   else
     if (CLK='1' and CLK'event) then 
-      OUT1 <= (others=>'0'); --first of all, assign all 0's to outputs at each new clock cycle (default output behavior) 
+      MEMOUT <= (others=>'0'); --first of all, assign all 0's to outputs at each new clock cycle (default output behavior) 
       if (WR='1') then --WRITE HAS PRIORITY over read operations.
         -- Store operation: we can store a word, or a hw, or a byte
-        if (LH='0' and LB='0')
-          REGISTERS(to_integer(unsigned(ADDRESS_OF_REG))):=DATAIN;  --Write a Word
-        elsif (LH='1' and LB='0')
+        if (LH='0' and LB='0') then
+          REGISTERS(to_integer(unsigned(ADDRESS_OF_REG)))<=DATA_IN;  --Write a Word
+        elsif (LH='1' and LB='0') then
           if(ADDR(1)='1') then
             --Load high half-word
-            REGISTERS(to_integer(unsigned(ADDRESS_OF_REG))):=DATAIN(15 downto 0) & REGISTERS(to_integer(unsigned(ADDRESS_OF_REG)))(15 downto 0);
+            REGISTERS(to_integer(unsigned(ADDRESS_OF_REG)))<=DATA_IN(15 downto 0) & REGISTERS(to_integer(unsigned(ADDRESS_OF_REG)))(15 downto 0);
           else
             --Load low half-word
-            REGISTERS(to_integer(unsigned(ADDRESS_OF_REG))):= REGISTERS(to_integer(unsigned(ADDRESS_OF_REG)))(31 downto 15) & DATAIN(15 downto 0) ;
+            REGISTERS(to_integer(unsigned(ADDRESS_OF_REG)))<= REGISTERS(to_integer(unsigned(ADDRESS_OF_REG)))(31 downto 16) & DATA_IN(15 downto 0) ;
           end if;
         else
           --Load a byte (this includes also case LH=0, LB=1 to cover all possible cases)
           if(ADDR(1 downto 0)="00") then
             --Byte 0
-            REGISTERS(to_integer(unsigned(ADDRESS_OF_REG))):=REGISTERS(to_integer(unsigned(ADDRESS_OF_REG)))(31 downto 8) & DATAIN(7 downto 0);
+            REGISTERS(to_integer(unsigned(ADDRESS_OF_REG)))<=REGISTERS(to_integer(unsigned(ADDRESS_OF_REG)))(31 downto 8) & DATA_IN(7 downto 0);
           elsif(ADDR(1 downto 0)="01") then
-            REGISTERS(to_integer(unsigned(ADDRESS_OF_REG))):=REGISTERS(to_integer(unsigned(ADDRESS_OF_REG)))(31 downto 16) & DATAIN(7 downto 0) & REGISTERS(to_integer(unsigned(ADDRESS_OF_REG)))(7 downto 0);
+            REGISTERS(to_integer(unsigned(ADDRESS_OF_REG)))<=REGISTERS(to_integer(unsigned(ADDRESS_OF_REG)))(31 downto 16) & DATA_IN(7 downto 0) & REGISTERS(to_integer(unsigned(ADDRESS_OF_REG)))(7 downto 0);
           elsif(ADDR(1 downto 0)="10") then
-            REGISTERS(to_integer(unsigned(ADDRESS_OF_REG))):=REGISTERS(to_integer(unsigned(ADDRESS_OF_REG)))(31 downto 24) & DATAIN(7 downto 0) & REGISTERS(to_integer(unsigned(ADDRESS_OF_REG)))(15 downto 0);
+            REGISTERS(to_integer(unsigned(ADDRESS_OF_REG)))<=REGISTERS(to_integer(unsigned(ADDRESS_OF_REG)))(31 downto 24) & DATA_IN(7 downto 0) & REGISTERS(to_integer(unsigned(ADDRESS_OF_REG)))(15 downto 0);
           else
-            REGISTERS(to_integer(unsigned(ADDRESS_OF_REG))):= DATAIN(7 downto 0) & REGISTERS(to_integer(unsigned(ADDRESS_OF_REG)))(23 downto 0);
+            REGISTERS(to_integer(unsigned(ADDRESS_OF_REG)))<= DATA_IN(7 downto 0) & REGISTERS(to_integer(unsigned(ADDRESS_OF_REG)))(23 downto 0);
           end if;
         end if;
-      elsif(RM='1') then
+      elsif(RD_MEM='1') then
         MEMOUT <= REGISTERS(to_integer(unsigned(ADDRESS_OF_REG)));
       end if;
-
+    end if;
+  end if;
+end process;
+      D32 <= MEMOUT;
       --Spills correct byte/hw/w from the word
       select_d16: entity work.MUX21_GENERIC 
-      GENERIC MAP(WIDTH => 16) PORT MAP(A => MEMOUT(31 downto 16), B => MEMOUT(15 downto 0), S => ADDR(1), Y => D16);
+      GENERIC MAP (WIDTH => 16) PORT MAP(A => MEMOUT(31 downto 16), B => MEMOUT(15 downto 0), S => ADDR(1), Y => D16);
       select_d8: entity work.MUX21_GENERIC 
-      GENERIC MAP(WIDTH => 8) PORT MAP(A => D16(15 downto 8), B => D16(7 downto 0), S => ADDR(0), Y => D8);
+      GENERIC MAP (WIDTH => 8) PORT MAP(A => D16(15 downto 8), B => D16(7 downto 0), S => ADDR(0), Y => D8);
 
       select_d8_extension: entity work.MUX21
       PORT MAP(A => D8(7), B => '0', S => SIGN, Y => toextendByte);
@@ -95,6 +100,4 @@ BEGIN
       select_result: entity work.MUX21_GENERIC
       GENERIC MAP(WIDTH => 32) PORT MAP(A => hword_ext, B => D32, S => LH, Y => the_read_result);
       DATA_OUT <= the_read_result;
-
-  end if;
 end architecture;
