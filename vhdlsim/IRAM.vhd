@@ -13,7 +13,6 @@ entity IRAM is
     RAM_DEPTH : integer := 48;
     I_SIZE : integer := 32);
   port (
-    Clk  : in  std_logic;
     Rst  : in  std_logic;
     Addr : in  std_logic_vector(I_SIZE - 1 downto 0);
     Dout : out std_logic_vector(I_SIZE - 1 downto 0)
@@ -47,19 +46,6 @@ begin  -- IRam_Bhe
         IRAM_mem(index) <= conv_integer(unsigned(tmp_data_u));       
         index := index + 1;
       end loop;
-    end if;
-  end process FILL_MEM_P;
-
-  OUTPUT_INST: process (Clk)
-    file mem_fp: text;
-    variable file_line : line;
-    variable index : integer := 0;
-    variable tmp_data_u : std_logic_vector(I_SIZE-1 downto 0);
-  begin  -- process OUTPUT_INST
-    if (Rst = '1') then
-      if (Clk = '1' and Clk'event) then
-        Dout <= IRAM_mem(conv_integer(unsigned(Addr)));
-      end if;
     end if;
   end process FILL_MEM_P;
 
