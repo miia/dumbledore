@@ -4,6 +4,8 @@ use ieee.std_logic_arith.all;
 use std.textio.all;
 use ieee.std_logic_textio.all;
 
+use work.myTypes.all;
+use work.ceillog.all;
 
 -- Instruction memory for DLX
 -- Memory filled by a process which reads from a file
@@ -14,13 +16,13 @@ entity IRAM is
     I_SIZE : integer := 32);
   port (
     Rst  : in  std_logic;
-    Addr : in  std_logic_vector(I_SIZE - 1 downto 0);
+    Addr : in  std_logic_vector(ceil_log2(RAM_DEPTH)-1 downto 0);
     Dout : out std_logic_vector(I_SIZE - 1 downto 0)
     );
 
 end IRAM;
 
-architecture IRam_Bhe of IRAM is
+architecture IRam_Beh of IRAM is
 
   type RAMtype is array (0 to RAM_DEPTH - 1) of integer;-- std_logic_vector(I_SIZE - 1 downto 0);
 
@@ -39,7 +41,7 @@ begin  -- IRam_Bhe
     variable tmp_data_u : std_logic_vector(I_SIZE-1 downto 0);
   begin  -- process FILL_MEM_P
     if (Rst = '0') then
-      file_open(mem_fp,"test.asm.mem",READ_MODE);
+      file_open(mem_fp,"software/test.asm.mem",READ_MODE);
       while (not endfile(mem_fp)) loop
         readline(mem_fp,file_line);
         hread(file_line,tmp_data_u);
@@ -49,4 +51,4 @@ begin  -- IRam_Bhe
     end if;
   end process FILL_MEM_P;
 
-end IRam_Bhe;
+end IRam_Beh;
