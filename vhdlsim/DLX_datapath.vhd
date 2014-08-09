@@ -16,6 +16,7 @@ ENTITY DLX_DATAPATH IS
  
  RF1      : in std_logic;  -- Register A Latch Enable
  RF2      : in std_logic;  -- Register B Latch Enable
+ R30_OUT  : out REGISTER_CONTENT; -- Output from register R30
  EN1      : in std_logic;  -- Register file / Immediate Register Enable
 
  -- EX Control Signals
@@ -59,7 +60,7 @@ BEGIN
     
   --DECODE/DATAREAD STAGE
   regfile: ENTITY work.REGISTER_FILE
-  GENERIC MAP(NREGS => 2**(REG_ADDRESS_SIZE), REG_WIDTH => REGISTER_SIZE)
+  GENERIC MAP(NREGS => 2**(REG_ADDRESS_SIZE), REG_WIDTH => REGISTER_SIZE, TO_SEND => 30)
   PORT MAP(
   CLK => CLK,
   RESET => RESET,
@@ -72,7 +73,8 @@ BEGIN
   ADD_RD2 => RS2,
   DATAIN => writeback_data,
   OUT1 => pipe1a_in,
-  OUT2 => pipe1b_in
+  OUT2 => pipe1b_in,
+  REG_FIXED_OUT => R30_OUT
 );
 
   pipe1a: ENTITY work.REG_GENERIC
