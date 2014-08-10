@@ -33,6 +33,7 @@ entity DLX_CU is
     S1           : out std_logic;  -- MUX-A Sel
     S2           : out std_logic;  -- MUX-B Sel
     ALU         : out ALUOP; -- ALU Operation Code (NOTE: ALUOP TYPE = 2 BITS)
+    SIGN        : out std_logic;  -- signed/unsigned operation (if 1, activates sign extension from 16 to 32 bits)
     EN2      : out std_logic;  -- ALU Output Register Enable --TODO: ONLY USED IF REGISTERS HAVE "EN" INPUT
     
     -- MEM Control Signals
@@ -61,11 +62,11 @@ architecture CU_HW of DLX_CU is
   signal cw   : std_logic_vector(CW_SIZE-1 downto 0); -- all the control signals output by the CU to the pipeline stages of the datapath.
 
   -- control word is shifted to the correct stage
-  signal cw0 : std_logic_vector(CW_SIZE-1 downto 0);         -- all 20 control signals; a part (3) will go to stage zero (IF), the rest (17) will go to the next pipeline register
-  signal cw1 : std_logic_vector(CW_SIZE-1-3 downto 0);       -- 17 control signals; a part (3) will go to stage one (ID), the rest (14) will go to the next pipeline register
-  signal cw2 : std_logic_vector(CW_SIZE-1-3-3 downto 0);     -- 14 control signals; a part (5) will go to stage two (EX), the rest (9) will go to the next pipeline register
-  signal cw3 : std_logic_vector(CW_SIZE-1-3-3-5 downto 0);   -- 9 control signals; a part (7) will go to stage three (MEM), the rest (2) will go to the next pipeline register
-  signal cw4 : std_logic_vector(CW_SIZE-1-3-3-5-7 downto 0); -- 2 control signals, which go directly to the last pipeline stage (WB)
+  signal cw0 : std_logic_vector(CW_SIZE-1 downto 0);         -- all 20 control signals; a part (CW_IF_SIZE) will go to stage zero (IF), the rest (17) will go to the next pipeline register
+  signal cw1 : std_logic_vector(CW_SIZE-1-CW_IF_SIZE downto 0);       -- 17 control signals; a part (CW_ID_SIZE) will go to stage one (ID), the rest (14) will go to the next pipeline register
+  signal cw2 : std_logic_vector(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE downto 0);     -- 14 control signals; a part (CW_EX_SIZE) will go to stage two (EX), the rest (9) will go to the next pipeline register
+  signal cw3 : std_logic_vector(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE downto 0);   -- 9 control signals; a part (CW_MEM_SIZE) will go to stage three (MEM), the rest (2) will go to the next pipeline register
+  signal cw4 : std_logic_vector(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE downto 0); -- 2 control signals (CW_WB_SIZE), which go directly to the last pipeline stage (WB)
 
 
   --signals for the control bits going to the ALU
