@@ -92,30 +92,31 @@ begin  -- dlx_cu_hw architecture
   IR_LATCH_EN  <= cw0(CW_SIZE-1 - 1);
   NPC_LATCH_EN <= cw0(CW_SIZE-1 - 2);
 
-  -- control signals for stage 1
-  RF1 <= cw1(CW_SIZE-1-3 - 0);
-  RF2 <= cw1(CW_SIZE-1-3 - 1);
-  EN1 <= cw1(CW_SIZE-1-3 - 2);
+  -- control signals for stage 1 (ID)
+  RF1 <= cw1(CW_SIZE-1-CW_IF_SIZE - 0);
+  RF2 <= cw1(CW_SIZE-1-CW_IF_SIZE - 1);
+  EN1 <= cw1(CW_SIZE-1-CW_IF_SIZE - 2);
 
-  -- control signals for stage 2
-  S1  <= cw2(CW_SIZE-1-3-3 - 0);
-  S2  <= cw2(CW_SIZE-1-3-3 - 1);
-  ALU <= cw2(CW_SIZE-1-3-3 - 2 downto CW_SIZE-1-3 - 3); --NOTE: the control signals for the ALU are composed of TWO bits
-  EN2 <= cw2(CW_SIZE-1-3-3 - 4);
+  -- control signals for stage 2 (EX)
+  S1  <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 0);
+  S2  <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 1);
+  ALU <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 2 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 3); --NOTE: the control signals for the ALU are composed of TWO bits
+  SIGN <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 4);
+  EN2 <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 5);
 
-  -- control signals for stage 3
-  RM  <= cw3(CW_SIZE-1-3-3-5 - 0);
-  WM  <= cw3(CW_SIZE-1-3-3-5 - 1);
-  EN3 <= cw3(CW_SIZE-1-3-3-5 - 2);
+  -- control signals for stage 3 (MEM)
+  RM  <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 0);
+  WM  <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 1);
+  EN3 <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 2);
 
-  EN_LMD <= cw3(CW_SIZE-1-3-3-5 - 3);
-  LH     <= cw3(CW_SIZE-1-3-3-5 - 4);
-  LB     <= cw3(CW_SIZE-1-3-3-5 - 5);
-  SIGN   <= cw3(CW_SIZE-1-3-3-5 - 6);
+  EN_LMD <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 3);
+  LH     <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 4);
+  LB     <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 5);
+  SIGN   <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 6);
 
-  -- control signals for stage 4
-  S3  <= cw3(CW_SIZE-1-3-3-5-7 - 0);
-  WF1 <= cw3(CW_SIZE-1-3-3-5-7 - 1);
+  -- control signals for stage 4 (WB)
+  S3  <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE - 0);
+  WF1 <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE - 1);
 
 
   ---------------------------------------------------------------------------------------------
@@ -139,10 +140,10 @@ begin  -- dlx_cu_hw architecture
     elsif Clk'event and Clk = '1' then  -- rising clock edge
 
          cw0 <= cw;
-         cw1 <= cw0(CW_SIZE-1-3 downto 0);
-         cw2 <= cw1(CW_SIZE-1-3-3 downto 0);
-         cw3 <= cw2(CW_SIZE-1-3-3-5 downto 0);
-         cw4 <= cw3(CW_SIZE-1-3-3-5-7 downto 0);
+         cw1 <= cw0(CW_SIZE-1-CW_IF_SIZE downto 0);
+         cw2 <= cw1(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE downto 0);
+         cw3 <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE downto 0);
+         cw4 <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE downto 0);
 
          --aluOpcode1 <= aluOpcode_i;
          --aluOpcode2 <= aluOpcode1;
