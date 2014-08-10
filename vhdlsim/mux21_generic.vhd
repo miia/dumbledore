@@ -38,10 +38,10 @@ begin
 		Port Map ( S, SB);
 	
 		UND1 : ND2
-		Port Map ( A(i), S, Y1(i));
+		Port Map ( A(i), S, Y1(i));     --with input S=1, A gets out of the mux. thanks NAND!
 	
 		UND2 : ND2
-		Port Map ( B(i), SB, Y2(i));
+		Port Map ( B(i), SB, Y2(i));    --with input S=0, B gets out of the mux. thanks NAND!
 	
 		UND3 : ND2
 		Port Map ( Y1(i), Y2(i), Y(i));

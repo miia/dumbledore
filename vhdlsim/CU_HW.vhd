@@ -32,6 +32,8 @@ entity DLX_CU is
     -- EX Control Signals
     S1           : out std_logic;  -- MUX-A Sel
     S2           : out std_logic;  -- MUX-B Sel
+    SELECT_REGA  : out std_logic_vector(1 downto 0); --2-bit signals driving the 4-input multiplexers to implement forwarding
+    SELECT_REGB  : out std_logic_vector(1 downto 0);
     ALU         : out ALUOP; -- ALU Operation Code (NOTE: ALUOP TYPE = 2 BITS)
     SIGN        : out std_logic;  -- signed/unsigned operation (if 1, activates sign extension from 16 to 32 bits)
     EN2      : out std_logic;  -- ALU Output Register Enable --TODO: ONLY USED IF REGISTERS HAVE "EN" INPUT
@@ -100,9 +102,11 @@ begin  -- dlx_cu_hw architecture
   -- control signals for stage 2 (EX)
   S1  <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 0);
   S2  <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 1);
-  ALU <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 2 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 3); --NOTE: the control signals for the ALU are composed of TWO bits
-  SIGN <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 4);
-  EN2 <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 5);
+  SELECT_REGA <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 2 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 3);
+  SELECT_REGB <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 4 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 5);
+  ALU <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 6 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 7); --NOTE: the control signals for the ALU are composed of TWO bits
+  SIGN <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 8);
+  EN2 <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 9);
 
   -- control signals for stage 3 (MEM)
   RM  <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 0);
@@ -190,8 +194,17 @@ begin  -- dlx_cu_hw architecture
 
 		--1) Generate the part of activation signals that's common to all R-type instructions:
 
-		--OLD EXAMPLE: cw(CW_SIZE-1 downto CW_SIZE-1 - 4) <= "11100"; --enable RF, read using both ports, muxes pass RF outputs
-		--OLD EXAMPLE:cw(CW_SIZE-1 - 7 downto 0) <= "100011"; --enable EN2 register, do nothing with memory, mux passes EN2 register output, write back on RF.
+                cw(CW_SIZE-1 downto CW_SIZE-1-2) <= "111"; --enable all registers of the IF stage
+
+                cw(CW_SIZE-1-CW_IF_SIZE downto CW_SIZE-1-CW_IF_SIZE-2) <= "111"; --enable RF and corresponding output registers in the ID stage
+
+                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-5) <= "11"&"01"&"01"; --enable and pass regA and regB to ALU through muxes (by default, keep forwarding disabled; will possibly be enabled later)
+                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9) <= "1";                                                   --enable ALU output register
+
+                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-6) <= "0000000"; --leave Data Memory completely unused - not activated, read and write disabled, output register disabled (Load Memory Register), etc. 
+
+                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE-1) <= "11"; --mux passes output of ALU in the Writeback stage; Register File Write enabled.
+
 
 		--2) Decide value of ALU control bits:
 
@@ -208,7 +221,7 @@ begin  -- dlx_cu_hw architecture
 	  	when "01"|"11" => --all R-type set operations (further subdivision possible here: bit 4 of IR tells if the comparison must be signed or unsigned.)
 	    		--(TODO: generate common signals to all set operations)
 	    		--(TODO: now look at bits 2,1,0 of IR (of IR_func) for exact instruction and generate specific signals.
-		   	--DO IT IN PAIRS: if slt|sltu, then generate certain signals; if sgt|sgtu, then generate certain signals; and so on... then you'll finally set bit 4 to drive the "unsigned" pion of the comparator.)
+		   	--DO IT IN PAIRS: if slt|sltu, then generate certain signals; if sgt|sgtu, then generate certain signals; and so on... then you'll finally set bit 4 to drive the "unsigned" pin of the comparator.)
 	    		--(TODO: as last activation signal, drive bit 4 of IR (of IR_func) directly to drive the "unsigned" pin of the comparator block.)
 
 	  	when others => NULL; --panic! TODO: something like an error assertion could be useful here during testing.
