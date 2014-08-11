@@ -18,7 +18,3 @@ begin
   
 end BEHAVIORAL;
 
-configuration CFG_FA_BEHAVIORAL of FA is	
-  for BEHAVIORAL
-  end for;
-end CFG_FA_BEHAVIORAL;

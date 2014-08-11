@@ -17,8 +17,3 @@ begin
   S <= A xor B;
   Co <= A and B;
 end BEHAVIORAL;
-
-configuration CFG_FA_BEHAVIORAL of HA is	
-  for BEHAVIORAL
-  end for;
-end CFG_FA_BEHAVIORAL;
