@@ -241,7 +241,7 @@ begin  -- dlx_cu_hw architecture
 
 		-- any other instruction types in the future? (e.g. J-type)
 
-       		when OP_INST_JTYPE => NULL; --TODO: NULL for now... add activation signals for JMP instructions.
+       		--when OP_INST_JTYPE => NULL; --TODO: NULL for now... add activation signals for JMP instructions.
 
 
 		when others => NULL; -- leave the NOP as it is
