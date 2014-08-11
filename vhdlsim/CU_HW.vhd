@@ -34,7 +34,7 @@ entity DLX_CU is
     S2           : out std_logic;  -- MUX-B Sel
     SELECT_REGA  : out std_logic_vector(1 downto 0); --2-bit signals driving the 4-input multiplexers to implement forwarding
     SELECT_REGB  : out std_logic_vector(1 downto 0);
-    ALU         : out ALUOP; -- ALU Operation Code (NOTE: ALUOP TYPE = 2 BITS)
+    ALU         : out ALUOP; -- ALU Operation Code (NOTE: ALUOP TYPE = 5 BITS)
     SIGN        : out std_logic;  -- signed/unsigned operation (if 1, activates sign extension from 16 to 32 bits)
     EN2      : out std_logic;  -- ALU Output Register Enable --TODO: ONLY USED IF REGISTERS HAVE "EN" INPUT
     
@@ -104,9 +104,9 @@ begin  -- dlx_cu_hw architecture
   S2  <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 1);
   SELECT_REGA <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 2 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 3);
   SELECT_REGB <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 4 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 5);
-  ALU <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 6 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 7); --NOTE: the control signals for the ALU are composed of TWO bits
-  SIGN <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 8);
-  EN2 <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 9);
+  ALU <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 6 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 10); --NOTE: the control signals for the ALU are composed of 5 bits
+  SIGN <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 11);
+  EN2 <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 12);
 
   -- control signals for stage 3 (MEM)
   RM  <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 0);
@@ -199,7 +199,8 @@ begin  -- dlx_cu_hw architecture
                 cw(CW_SIZE-1-CW_IF_SIZE downto CW_SIZE-1-CW_IF_SIZE-2) <= "111"; --enable RF and corresponding output registers in the ID stage
 
                 cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-5) <= "11"&"01"&"01"; --enable and pass regA and regB to ALU through muxes (by default, keep forwarding disabled; will possibly be enabled later)
-                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9) <= "1";                                                   --enable ALU output register
+                --(leave ALU and SIGN signals to be set later;)
+                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-12) <= "1";                                                   --enable ALU output register
 
                 cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-6) <= "0000000"; --leave Data Memory completely unused - not activated, read and write disabled, output register disabled (Load Memory Register), etc. 
 
@@ -213,11 +214,26 @@ begin  -- dlx_cu_hw architecture
 				              --this allows us to first generate a subset of signals common to that sub-class (i.e., the signals common to all R-type shift operations) before finally generating the few signals specific to the exact instruction.
 				              --cleaner code FTW!
 	  	when "00"      => --all R-type shift operations
-	    		--(TODO: generate common signals to all shift operations)
-	    		--(TODO: now look at bits 1,0 of IR (of IR_func) for exact instruction and generate specific signals.)
+
+                        --generate signals common to all shift instructions:
+                        cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-6 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-7) <= "00"; --the upper 2 bits of ALU output are NOT used; set them to zero
+                        cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-11) <= "0";                                           --the SIGN output is NOT used; set it to zero
+
+	    		--now look at bits 1,0 of IR (of IR_func) for exact instruction and generate specific signals.
+                        case IR_func(1 downto 0) is
+			when "00" => -- SLL
+                                     cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-8 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10) <= "111"; --Logical; Shift; Left
+			when "10" => -- SRL
+                                     cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-8 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10) <= "110"; --Logical; Shift; Right
+			when "11" => -- SRA
+                                     cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-8 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10) <= "010"; --Arithmetic; Shift; Right
+			when others => NULL; --if Opcode not recognized, leave NOP.
+                        end case;
+
 	  	when "10"      => --all R-type arith/logic operations
 	    		--(TODO: generate common signals to all arithmetic/logic operations)
 	    		--(TODO: now look at bits 2,1,0 of IR (of IR_func) for exact instruction and generate specific signals.)
+
 	  	when "01"|"11" => --all R-type set operations (further subdivision possible here: bit 4 of IR tells if the comparison must be signed or unsigned.)
 	    		--(TODO: generate common signals to all set operations)
 	    		--(TODO: now look at bits 2,1,0 of IR (of IR_func) for exact instruction and generate specific signals.
