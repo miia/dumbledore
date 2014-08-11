@@ -7,7 +7,7 @@ ENTITY MEMORY_STAGE IS
   PORT(
     CLK: in std_logic;
     RESET: in std_logic; -- Active low
-    ADDR: in std_logic_vector(DATA_ADDRESS_SIZE downto 0);
+    ADDR: in DATA_ADDRESS;
     RD_MEM: in std_logic;
     WR: 		IN std_logic;
     SIGN: in std_logic;
@@ -21,9 +21,10 @@ END MEMORY_STAGE;
 ARCHITECTURE mixed OF MEMORY_STAGE IS
   constant REG_WIDTH: integer := 32;
   subtype REG_ADDR is natural range 0 to 1023; -- using natural type (from now on, REG_ADDR is equivalent to "(0 to 31)")
-	type REG_ARRAY is array(REG_ADDR) of std_logic_vector(REG_WIDTH-1 downto 0); -- we'll use REG_WIDTH=64
+  type REG_ARRAY is array(REG_ADDR) of std_logic_vector(REG_WIDTH-1 downto 0); -- we'll use REG_WIDTH=64
   signal REGISTERS : REG_ARRAY; -- No contemporary LOAD and STORE will be done in memory
-  signal ADDRESS_OF_REG: DATA_ADDRESS_STRETCHED;
+  signal ADD_OF_REG: DATA_ADDRESS_STRETCHED;
+  signal ADDRESS_OF_REG: std_logic_vector(9 downto 0);
   signal MEMOUT: std_logic_vector(31 downto 0);
   signal D32, hword_ext, the_read_result: std_logic_vector(31 downto 0);
   signal D16, byte_ex, hword: std_logic_vector(15 downto 0);
@@ -31,8 +32,9 @@ ARCHITECTURE mixed OF MEMORY_STAGE IS
   signal toextendByte, toextendHword: std_logic;
 BEGIN
 
-  ADDRESS_OF_REG <= ADDR(31 downto 2); -- Last 2 bits decide HW or B
-
+  ADD_OF_REG <= ADDR(31 downto 2); -- Last 2 bits decide HW or B
+  ADDRESS_OF_REG <= ADD_OF_REG(9 downto 0);
+  
   process (CLK, RESET)
   begin
   if (RESET='0') then

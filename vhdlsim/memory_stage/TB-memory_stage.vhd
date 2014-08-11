@@ -8,7 +8,7 @@ END ENTITY;
 ARCHITECTURE test OF TB_MEMORY_STAGE IS
     signal CLK:  std_logic := '0' ;
     signal RESET: std_logic := '0' ; -- Active low
-    signal ADDR:  std_logic_vector(DATA_ADDRESS_SIZE downto 0);
+    signal ADDR:  DATA_ADDRESS;
     signal RD_MEM:  std_logic;
     signal WR: std_logic;
     signal SIGN:  std_logic;
