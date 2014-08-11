@@ -50,13 +50,17 @@ begin
   assign_values_to_muxinput: for i in 0 to REGISTER_SIZE-1 generate
       opselection(0,i)<=intout(i);
       opselection(1,i)<=logiclhout(i);
-      opselection(2,i)<=shiftout(i);
+      opselection(2,i)<=shiftout(i);   --ho capito bene cosa hai fatto con OP(2)?? *sangue dagli occhi* D:
       opselection(3,i)<=shiftout(i);
   end generate;
 
-  result_selector: ENTITY work.MUX_GENERIC
-  GENERIC MAP(WIDTH => REGISTER_SIZE, HEIGHT => 4)
-  PORT MAP(A => opselection, S => OP(3 downto 2), Y => the_result);
+  result_selector: ENTITY work.MUX_GENERIC                           --NOTE: this mux is driven by OP(3) and OP(2);
+                                                                     --if S = "00"=> intout (from arithmetic unit); "01" => logiclhout (either logic unit or load unit, depending on previous mux); "10" or "11" => shifter output
+                                                                     --this means that OP(2) can be used EITHER to decide Logic VS Arithmetic shift in the shifter (use OP(3)=1 so that the shifter's output is selected in this mux anyway)
+                                                                     --                          OR to make the difference between selecting intout or logiclhout in the mux (and in this case you don't care about configuring the shifter)
+                                                                     -- => OP(2) has TWO mutually exclusive uses! configuring the shifter for Logical vs Arithmetic, and contributing to mux output selection (intout vs logiclhout).
+  GENERIC MAP(WIDTH => REGISTER_SIZE, HEIGHT => 4)                   
+  PORT MAP(A => opselection, S => OP(3 downto 2), Y => the_result);  
 
   Y <= the_result;
 

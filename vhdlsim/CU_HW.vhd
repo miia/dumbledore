@@ -215,8 +215,8 @@ begin  -- dlx_cu_hw architecture
 				              --cleaner code FTW!
 	  	when "00"      => --all R-type shift operations
 
-                        --generate signals common to all shift instructions:
-                        cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-6 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-7) <= "00"; --the upper 2 bits of ALU output are NOT used; set them to zero
+                        --generate signals common to all shift operations:
+                        cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-6 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-7) <= "01"; --the upper bit of ALU output is NOT used; set it to zero. second-last bit selects shifter output in the mux within the ALU.
                         cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-11) <= "0";                                           --the SIGN output is NOT used; set it to zero
 
 	    		--now look at bits 1,0 of IR (of IR_func) for exact instruction and generate specific signals.
@@ -231,8 +231,50 @@ begin  -- dlx_cu_hw architecture
                         end case;
 
 	  	when "10"      => --all R-type arith/logic operations
-	    		--(TODO: generate common signals to all arithmetic/logic operations)
-	    		--(TODO: now look at bits 2,1,0 of IR (of IR_func) for exact instruction and generate specific signals.)
+
+	    		--generate common signals to all arithmetic/logic operations:
+                        cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-6) <= "0"; --the upper bit of ALU output is NOT used; set it to zero. other 2 bits select add/sub output in the mux within the ALU.
+
+	    		--now look at bits 2,1,0 of IR (of IR_func) for exact instruction and generate specific signals.
+                        case IR_func(2) is
+                        when "0" => --it's an arithmetic (ADD/SUB) operation;
+
+                                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-7 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-8) <= "00"; --needs the ADD/SUB block of the ALU to be selected in the output mux inside the ALU. generate corresponding signal.
+
+                        	case IR_func(1 downto 0) is
+				when "00" => -- ADD
+                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10) <= "10"; --select output of adder/subtractor, request addition
+                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-11) <= "0";                                           --signed.
+				when "01" => -- ADDU
+                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10) <= "10"; --select output of adder/subtractor, request addition
+                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-11) <= "1";                                           --unsigned.
+				when "10" => -- SUB
+                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10) <= "11"; --select output of adder/subtractor, request subtraction
+                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-11) <= "0";                                           --signed.
+				when "11" => -- SUBU
+                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10) <= "11"; --select output of adder/subtractor, request subtraction
+                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-11) <= "1";                                           --unsigned.
+
+				when others => NULL; --if Opcode not recognized, leave NOP.
+                        	end case;
+
+			when "1" => --it's a logic operation;
+
+                                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-7 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-8) <= "01"; --needs the Logic block of the ALU to be selected in the output mux inside the ALU. generate corresponding signal.
+
+                        	case IR_func(1 downto 0) is
+				when "00" => -- AND
+                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10) <= "01"; --select AND
+				when "01" => -- OR
+                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10) <= "00"; --select OR
+				when "10" => -- XOR
+                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10) <= "10"; --select XOR
+
+				when others => NULL; --if Opcode not recognized, leave NOP.
+                        	end case;
+
+			when others => NULL;
+			end case;
 
 	  	when "01"|"11" => --all R-type set operations (further subdivision possible here: bit 4 of IR tells if the comparison must be signed or unsigned.)
 	    		--(TODO: generate common signals to all set operations)
