@@ -102,12 +102,12 @@ BEGIN
   assign_values: for i in 0 to REGISTER_SIZE-1 generate
 
     input_for_right_a(0,i)<='0';
-    input_for_right_a(1,i)<=pipe1a_out(i);
+    input_for_right_a(1,i)<=pipe1a_out(i); --coming from RF output (will be regA operand for ALU)
     input_for_right_a(2,i)<=regO_out(i);
     input_for_right_a(3,i)<=regBa_out(i);
 
     input_for_right_b(0,i)<='0';
-    input_for_right_b(1,i)<=pipe1b_out(i);
+    input_for_right_b(1,i)<=pipe1b_out(i); --coming from RF output (will be regB operand for ALU)
     input_for_right_b(2,i)<=regO_out(i);
     input_for_right_b(3,i)<=regBa_out(i);
   end generate;

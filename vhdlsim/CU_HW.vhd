@@ -32,7 +32,10 @@ entity DLX_CU is
     -- EX Control Signals
     S1           : out std_logic;  -- MUX-A Sel
     S2           : out std_logic;  -- MUX-B Sel
+    SELECT_REGA  : out std_logic_vector(1 downto 0); --2-bit signals driving the 4-input multiplexers to implement forwarding
+    SELECT_REGB  : out std_logic_vector(1 downto 0);
     ALU         : out ALUOP; -- ALU Operation Code (NOTE: ALUOP TYPE = 2 BITS)
+    SIGN        : out std_logic;  -- signed/unsigned operation (if 1, activates sign extension from 16 to 32 bits)
     EN2      : out std_logic;  -- ALU Output Register Enable --TODO: ONLY USED IF REGISTERS HAVE "EN" INPUT
     
     -- MEM Control Signals
@@ -60,12 +63,12 @@ architecture CU_HW of DLX_CU is
 
   signal cw   : std_logic_vector(CW_SIZE-1 downto 0); -- all the control signals output by the CU to the pipeline stages of the datapath.
 
-  -- control word is shifted to the correct stage - TODO: MODIFY THIS to reflect correct number and size of stages!!
-  signal cw0 : std_logic_vector(CW_SIZE-1 downto 0);         -- all 20 control signals; a part (3) will go to stage zero (IF), the rest (17) will go to the next pipeline register
-  signal cw1 : std_logic_vector(CW_SIZE-1-3 downto 0);       -- 17 control signals; a part (3) will go to stage one (ID), the rest (14) will go to the next pipeline register
-  signal cw2 : std_logic_vector(CW_SIZE-1-3-3 downto 0);     -- 14 control signals; a part (5) will go to stage two (EX), the rest (9) will go to the next pipeline register
-  signal cw3 : std_logic_vector(CW_SIZE-1-3-3-5 downto 0);   -- 9 control signals; a part (7) will go to stage three (MEM), the rest (2) will go to the next pipeline register
-  signal cw4 : std_logic_vector(CW_SIZE-1-3-3-5-7 downto 0); -- 2 control signals, which go directly to the last pipeline stage (WB)
+  -- control word is shifted to the correct stage
+  signal cw0 : std_logic_vector(CW_SIZE-1 downto 0);         -- all 20 control signals; a part (CW_IF_SIZE) will go to stage zero (IF), the rest (17) will go to the next pipeline register
+  signal cw1 : std_logic_vector(CW_SIZE-1-CW_IF_SIZE downto 0);       -- 17 control signals; a part (CW_ID_SIZE) will go to stage one (ID), the rest (14) will go to the next pipeline register
+  signal cw2 : std_logic_vector(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE downto 0);     -- 14 control signals; a part (CW_EX_SIZE) will go to stage two (EX), the rest (9) will go to the next pipeline register
+  signal cw3 : std_logic_vector(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE downto 0);   -- 9 control signals; a part (CW_MEM_SIZE) will go to stage three (MEM), the rest (2) will go to the next pipeline register
+  signal cw4 : std_logic_vector(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE downto 0); -- 2 control signals (CW_WB_SIZE), which go directly to the last pipeline stage (WB)
 
 
   --signals for the control bits going to the ALU
@@ -91,30 +94,33 @@ begin  -- dlx_cu_hw architecture
   IR_LATCH_EN  <= cw0(CW_SIZE-1 - 1);
   NPC_LATCH_EN <= cw0(CW_SIZE-1 - 2);
 
-  -- control signals for stage 1
-  RF1 <= cw1(CW_SIZE-1-3 - 0);
-  RF2 <= cw1(CW_SIZE-1-3 - 1);
-  EN1 <= cw1(CW_SIZE-1-3 - 2);
+  -- control signals for stage 1 (ID)
+  RF1 <= cw1(CW_SIZE-1-CW_IF_SIZE - 0);
+  RF2 <= cw1(CW_SIZE-1-CW_IF_SIZE - 1);
+  EN1 <= cw1(CW_SIZE-1-CW_IF_SIZE - 2);
 
-  -- control signals for stage 2
-  S1  <= cw2(CW_SIZE-1-3-3 - 0);
-  S2  <= cw2(CW_SIZE-1-3-3 - 1);
-  ALU <= cw2(CW_SIZE-1-3-3 - 2 downto CW_SIZE-1-3 - 3); --NOTE: the control signals for the ALU are composed of TWO bits
-  EN2 <= cw2(CW_SIZE-1-3-3 - 4);
+  -- control signals for stage 2 (EX)
+  S1  <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 0);
+  S2  <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 1);
+  SELECT_REGA <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 2 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 3);
+  SELECT_REGB <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 4 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 5);
+  ALU <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 6 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 7); --NOTE: the control signals for the ALU are composed of TWO bits
+  SIGN <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 8);
+  EN2 <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 9);
 
-  -- control signals for stage 3
-  RM  <= cw3(CW_SIZE-1-3-3-5 - 0);
-  WM  <= cw3(CW_SIZE-1-3-3-5 - 1);
-  EN3 <= cw3(CW_SIZE-1-3-3-5 - 2);
+  -- control signals for stage 3 (MEM)
+  RM  <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 0);
+  WM  <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 1);
+  EN3 <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 2);
 
-  EN_LMD <= cw3(CW_SIZE-1-3-3-5 - 3);
-  LH     <= cw3(CW_SIZE-1-3-3-5 - 4);
-  LB     <= cw3(CW_SIZE-1-3-3-5 - 5);
-  SIGN   <= cw3(CW_SIZE-1-3-3-5 - 6);
+  EN_LMD <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 3);
+  LH     <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 4);
+  LB     <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 5);
+  SIGN   <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 6);
 
-  -- control signals for stage 4
-  S3  <= cw3(CW_SIZE-1-3-3-5-7 - 0);
-  WF1 <= cw3(CW_SIZE-1-3-3-5-7 - 1);
+  -- control signals for stage 4 (WB)
+  S3  <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE - 0);
+  WF1 <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE - 1);
 
 
   ---------------------------------------------------------------------------------------------
@@ -138,10 +144,10 @@ begin  -- dlx_cu_hw architecture
     elsif Clk'event and Clk = '1' then  -- rising clock edge
 
          cw0 <= cw;
-         cw1 <= cw0(CW_SIZE-1-3 downto 0);
-         cw2 <= cw1(CW_SIZE-1-3-3 downto 0);
-         cw3 <= cw2(CW_SIZE-1-3-3-5 downto 0);
-         cw4 <= cw3(CW_SIZE-1-3-3-5-7 downto 0);
+         cw1 <= cw0(CW_SIZE-1-CW_IF_SIZE downto 0);
+         cw2 <= cw1(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE downto 0);
+         cw3 <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE downto 0);
+         cw4 <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE downto 0);
 
          --aluOpcode1 <= aluOpcode_i;
          --aluOpcode2 <= aluOpcode1;
@@ -157,7 +163,7 @@ begin  -- dlx_cu_hw architecture
    --Process to generate control signals for ALU--
    -----------------------------------------------
 
-   --LEGEND:
+   --LEGEND (TODO: update this with the version on MS server, whenever it comes up again!):
    --Remember that (timing/pipelining apart) the meaning of each bit in the cw signal is:
    -- control signals for stage 1
    --cw(CW_SIZE-1 - 0) corresponds to RF1; (1 = read out of port1)
@@ -177,76 +183,112 @@ begin  -- dlx_cu_hw architecture
   
    CONTROL_SIGNALS_PROC : process (IR_opcode, IR_func)
    begin
+
 	cw <= (others => '0'); -- default is NOP.
 
-	case optype(IR_opcode) is --look at type of instruction (most significant 2 bits of IR_opcode)
+	if(IR_opcode(OP_CODE_SIZE-1 downto 0) = "000000") then --all R-type instructions
+	--instruction is R-type (=Register-Register operations);
+	--this means that (from left to right) the first 6 bits are the Opcode field, then 5 bits are R1, 5 bits are R2, 5 bits are R3, and 11 bits are the Function field.
+	--Opcode and Function are what we'll work with inside the CU to generate the control signals;
+	--the operand (R1,R2,R3) signals are not used inside the CU (they go directly to the Datapath input ports).
 
-		when OP_INST_RTYPE =>
-		--instruction is R-type (=Register-Register ALU operations);
-		--this means that (from left to right) the first 6 bits are the Opcode field, then 5 bits are R1, 5 bits are R2, 5 bits are R3, and 11 bits are the Function field.
-		--Opcode and Function are what we'll work with inside the CU to generate the control signals (cw, 13 bits);
-		--the R1,R2,R3 signals are not used inside the CU (they go directly to the Datapath input ports).
+		--1) Generate the part of activation signals that's common to all R-type instructions:
 
-			--decide value of ALU control bits:
-			case IR_func is --since the instruction is R-type, to decide the ALU activation signals we also need to look at the Function bits (=least significant 11 bits)
-				when FUNC_ADD => cw(CW_SIZE-1 - 8 downto CW_SIZE-1 - 9) <= "00";  --TODO: THESE ACTIVATION SIGNALS (and also func_add, func_sub etc.) STILL HAVE TO BE DECIDED!!
-				when FUNC_SUB => cw(CW_SIZE-1 - 8 downto CW_SIZE-1 - 9) <= "01";
-				when FUNC_AND => cw(CW_SIZE-1 - 8 downto CW_SIZE-1 - 9) <= "10";
-				when FUNC_OR  => cw(CW_SIZE-1 - 8 downto CW_SIZE-1 - 9) <= "11";
-				-- in the future, other operations can be encoded by Function bits: they're 11 bits, we used only the first 2!!
-				when others => NULL; --leave default bits.
-			end case;
+                cw(CW_SIZE-1 downto CW_SIZE-1-2) <= "111"; --enable all registers of the IF stage
 
-                        --TODO: isn't the "case" statement below completely useless?? the following signals should always be the same for EVERY R-type operation...
+                cw(CW_SIZE-1-CW_IF_SIZE downto CW_SIZE-1-CW_IF_SIZE-2) <= "111"; --enable RF and corresponding output registers in the ID stage
 
-			--decide the rest of the control bits:
-			case IR_opcode is --and, as always, we need to look at the content of the opcode part of the IR.
-				when CODE_RTYPE_ADD => cw(CW_SIZE-1 downto CW_SIZE-1 - 4) <= "11100"; --enable RF, read using both ports, muxes pass RF outputs
-						       cw(CW_SIZE-1 - 7 downto 0) <= "100011"; --enable EN2 register, do nothing with memory, mux passes EN2 register output, write back on RF.
-            --REMAINING CASES ARE EQUIVALENT (the opcode field is always he same, it only specifies that the instruction is an arithmetic operation - the exact operation is specified in Function bits)
-				--when CODE_RTYPE_SUB => cw(CW_SIZE-1 downto CW_SIZE-1 - 4) <= "11100";
-				--		       cw(CW_SIZE-1 - 7 downto 0) <= "100011";
-				--when CODE_RTYPE_AND => cw(CW_SIZE-1 downto CW_SIZE-1 - 4) <= "11100";
-				--		       cw(CW_SIZE-1 - 7 downto 0) <= "100011";
-				--when CODE_RTYPE_OR  => cw(CW_SIZE-1 downto CW_SIZE-1 - 4) <= "11100";
-				--		       cw(CW_SIZE-1 - 7 downto 0) <= "100011";
-	         when others => NULL; --leave NOP.
-			end case;
+                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-5) <= "11"&"01"&"01"; --enable and pass regA and regB to ALU through muxes (by default, keep forwarding disabled; will possibly be enabled later)
+                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9) <= "1";                                                   --enable ALU output register
 
-		when OP_INST_ITYPE =>
-		--instruction is I-type (=Load, Store, or ALU operations using an immediate value and a register);
-		--this means that (from left to right) the first 6 bits are the Opcode field, then 5 bits are R1, 5 bits are R2, and 16 bits are the Immediate field.
-		--so, in this case, the CU only cares about the Opcode field (6 most significant bits of IR).
+                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-6) <= "0000000"; --leave Data Memory completely unused - not activated, read and write disabled, output register disabled (Load Memory Register), etc. 
 
-			--decide all control bits by just looking at the Opcode field (even the ALU control bits: in this case, there is no Function field => they only depend on the Opcode field.)
-			case IR_opcode is
-				when CODE_ITYPE_ADD1 => cw <= "01110"&"00"&"100011";  --TODO: THESE ACTIVATION SIGNALS STILL HAVE TO BE DECIDED!!
-				when CODE_ITYPE_SUB1 => cw <= "01110"&"01"&"100011";
-				when CODE_ITYPE_AND1 => cw <= "01110"&"10"&"100011";
-				when CODE_ITYPE_OR1  => cw <= "01110"&"11"&"100011";
-				when CODE_ITYPE_ADD2 => cw <= "10101"&"00"&"100011";  --like ADD1, except S1 and S2 are different (ALU receives input from A,INP2 instead of INP1,B)
-				when CODE_ITYPE_SUB2 => cw <= "10101"&"01"&"100011";  --same here.
-				when CODE_ITYPE_AND2 => cw <= "10101"&"10"&"100011";  --same here.
-				when CODE_ITYPE_OR2  => cw <= "10101"&"11"&"100011";  --same here.
-
-			 --when CODE_ITYPE_MOV    => cw <= "10101"&"00"&"100011"; --SAME OPCODE as add1 (mov is implemented as add1 with INP1=0)
-				when CODE_ITYPE_SREG1  => cw <= "00111"&"00"&"100011";
-		      when CODE_ITYPE_SREG2  => cw <= "00111"&"00"&"100011";
-				when CODE_ITYPE_SMEM2  => cw <= "11101"&"00"&"110100"; --sum content from regfile + INP2; use result as address to write on DataMem (writing the other content coming from regfile).
-				when CODE_ITYPE_LMEM1  => cw <= "01110"&"00"&"101101"; --sum content from regfile + INP1; use result as address to read from DataMem; write result into regfile.
-				when CODE_ITYPE_LMEM2  => cw <= "10101"&"00"&"101101"; --RIGHT? i'm dead, someone check this out later.
-				    
-				when others => NULL; --if Opcode not recognized, leave NOP.
-			end case;
-
-		-- any other instruction types in the future? (e.g. J-type)
-
-       		--when OP_INST_JTYPE => NULL; --TODO: NULL for now... add activation signals for JMP instructions.
+                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE-1) <= "11"; --mux passes output of ALU in the Writeback stage; Register File Write enabled.
 
 
-		when others => NULL; -- leave the NOP as it is
+		--2) Decide value of ALU control bits:
 
-	 end case;
+		--since the instruction is R-type, to decide the ALU activation signals we also need to look at the Function bits (=least significant 11 bits)
+	  	case IR_func(5)&IR_func(3) is --bits 5,3 of IR tell us which of 3 R-type sub-classes the operation belongs to;
+				              --this allows us to first generate a subset of signals common to that sub-class (i.e., the signals common to all R-type shift operations) before finally generating the few signals specific to the exact instruction.
+				              --cleaner code FTW!
+	  	when "00"      => --all R-type shift operations
+	    		--(TODO: generate common signals to all shift operations)
+	    		--(TODO: now look at bits 1,0 of IR (of IR_func) for exact instruction and generate specific signals.)
+	  	when "10"      => --all R-type arith/logic operations
+	    		--(TODO: generate common signals to all arithmetic/logic operations)
+	    		--(TODO: now look at bits 2,1,0 of IR (of IR_func) for exact instruction and generate specific signals.)
+	  	when "01"|"11" => --all R-type set operations (further subdivision possible here: bit 4 of IR tells if the comparison must be signed or unsigned.)
+	    		--(TODO: generate common signals to all set operations)
+	    		--(TODO: now look at bits 2,1,0 of IR (of IR_func) for exact instruction and generate specific signals.
+		   	--DO IT IN PAIRS: if slt|sltu, then generate certain signals; if sgt|sgtu, then generate certain signals; and so on... then you'll finally set bit 4 to drive the "unsigned" pin of the comparator.)
+	    		--(TODO: as last activation signal, drive bit 4 of IR (of IR_func) directly to drive the "unsigned" pin of the comparator block.)
+
+	  	when others => NULL; --panic! TODO: something like an error assertion could be useful here during testing.
+	  	end case;
+
+
+	elsif(IR_opcode(OP_CODE_SIZE-1 downto OP_CODE_SIZE-1-2) = "000") then --first 3 bits of Opcode field tell us this is an I-type branch or jump instruction (i.e., with an immediate operand, to be added to PC+4)
+                                                                              --I-type => from left to right, the first 6 bits are the Opcode field, then 5 bits are R1, 5 bits are R2, and 16 bits are the Immediate field.
+
+  		--(TODO: generate common signals to all branch or jump operations)
+  		--(TODO: look at bit 28 of IR (bit 2 of IR_opcode) to see if it's a branch (conditional) of just a jmp (unconditional); if the bit is 1 (branch), generate the additional signals needed by a branch and not by a jmp.
+         	--that is: the branches need the additional configuration of the branch unit, etc...)
+  		--(TODO: now look at bits 27,26 of IR (bits 1,0 of IR_opcode) for exact instruction and generate specific signals.)
+
+
+	elsif(IR_opcode(OP_CODE_SIZE-1 downto OP_CODE_SIZE-1-3) = "0101") then --bits 4 bits of Opcode field tell us this is an I-type shift instruction
+                                                                               --(i.e. a shift, but with immediate source; the R-type shift instructions, instead, have already been covered above)
+                                                                               --I-type => from left to right, the first 6 bits are the Opcode field, then 5 bits are R1, 5 bits are R2, and 16 bits are the Immediate field.
+
+		--(TODO: generate common signals to all shift operations)
+		--(TODO: now look at bits 27,26 of IR (bits 1,0 of IR_opcode) for exact instruction and generate specific signals.)
+
+	--elsif(ir(xx downto yy) = zzzz) then --LOAD/STORE (TODO.)
+	--
+	--
+
+
+	elsif(IR_opcode(OP_CODE_SIZE-1 downto OP_CODE_SIZE-1-2) = "001") then --some more I-type instructions: either lhi, or an arithmetic/logic instruction with immediate operand
+                                                                              --I-type => from left to right, the first 6 bits are the Opcode field, then 5 bits are R1, 5 bits are R2, and 16 bits are the Immediate field.
+
+                 --(WARNING/TODO: lhi is covered in this "if" too, so maybe (depending on ISA) all other load/stores will be included here as well, and a sub-condition will distinguish between load/stores and arith/logic) 
+
+		--(TODO: generate activation signals common to all lhi AND arithmetic/logic operations)
+		--(TODO: distinguish betweeh lhi and arithmetic/logic instruction; generate respective signals)
+		--(TODO: look at bits 28-27-26 of IR (bits 2-1-0 of IR_opcode) for exact instruction and generate specific signals.)
+
+                --OLD EXAMPLE:
+		--decide all control bits by just looking at the Opcode field (even the ALU control bits: in this case, there is no Function field => they only depend on the Opcode field.)
+		--case IR_opcode is
+		--	when CODE_ITYPE_ADD1 => cw <= "01110"&"00"&"100011";
+		--	when CODE_ITYPE_SUB1 => cw <= "01110"&"01"&"100011";
+		--	when CODE_ITYPE_AND1 => cw <= "01110"&"10"&"100011";
+		--	when CODE_ITYPE_OR1  => cw <= "01110"&"11"&"100011";
+		--	when CODE_ITYPE_ADD2 => cw <= "10101"&"00"&"100011";  --like ADD1, except S1 and S2 are different (ALU receives input from A,INP2 instead of INP1,B)
+		--	when CODE_ITYPE_SUB2 => cw <= "10101"&"01"&"100011";  --same here.
+		--	when CODE_ITYPE_AND2 => cw <= "10101"&"10"&"100011";  --same here.
+		--	when CODE_ITYPE_OR2  => cw <= "10101"&"11"&"100011";  --same here.
+
+		--      when CODE_ITYPE_MOV    => cw <= "10101"&"00"&"100011"; --SAME OPCODE as add1 (mov is implemented as add1 with INP1=0)
+		--	when CODE_ITYPE_SREG1  => cw <= "00111"&"00"&"100011";
+	      	--	when CODE_ITYPE_SREG2  => cw <= "00111"&"00"&"100011";
+		--	when CODE_ITYPE_SMEM2  => cw <= "11101"&"00"&"110100"; --sum content from regfile + INP2; use result as address to write on DataMem (writing the other content coming from regfile).
+		--	when CODE_ITYPE_LMEM1  => cw <= "01110"&"00"&"101101"; --sum content from regfile + INP1; use result as address to read from DataMem; write result into regfile.
+		--	when CODE_ITYPE_LMEM2  => cw <= "10101"&"00"&"101101"; --RIGHT? i'm dead, someone check this out later.
+			    
+		--	when others => NULL; --if Opcode not recognized, leave NOP.
+		--end case;
+
+
+
+
+	-- TODO: any other instruction types in the future?
+
+	else => NULL; -- leave the NOP as it is
+
+	end if;
+
    end process CONTROL_SIGNALS_PROC;
 
 

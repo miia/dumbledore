@@ -3,9 +3,16 @@ use ieee.std_logic_1164.all;
 
 package myTypes is
 
--- Control unit input sizes
+
+   -- Control unit sizes
     constant IR_SIZE : integer := 32; --size of the whole instruction (divided in [OPCODE, R1, R2, IMMEDIATE] or [OPCODE, R1, R2, R3, FUNC] )
-    constant CW_SIZE : integer := 20; --number of control signals output by the Control Unit
+    constant CW_SIZE : integer := 25; --number of control signals output by the Control Unit
+    constant CW_IF_SIZE : integer := 3;  --number of bits going from the CW to the IF stage
+    constant CW_ID_SIZE : integer := 3;  --number of bits going from the CW to the ID stage
+    constant CW_EX_SIZE : integer := 10;  --number of bits going from the CW to the EX stage
+    constant CW_MEM_SIZE : integer := 7; --number of bits going from the CW to the MEM stage
+    constant CW_WB_SIZE : integer := 2;  --number of bits going from the CW to the WB stage
+
     constant OP_CODE_SIZE : integer :=  6;                                              -- OPCODE field size
     constant REG_ADDRESS_SIZE: integer := 5;
     subtype CODE is std_logic_vector (OP_CODE_SIZE-1 downto 0);
