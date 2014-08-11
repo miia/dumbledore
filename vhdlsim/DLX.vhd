@@ -1,11 +1,11 @@
 LIBRARY IEEE;
 USE IEEE.std_logic_1164.ALL;
-
+USE work.myTypes.ALL;
 ENTITY DLX IS
   PORT(
   CLK: in std_logic;
   RESET: in std_logic;
-  POUT: out std_logic_vector(31 downto 0); -- Connected to R30
+  POUT: out std_logic_vector(31 downto 0) -- Connected to R30
   );
 END DLX;
 
@@ -22,13 +22,13 @@ ARCHITECTURE structural OF DLX IS
   signal S3, WF1: std_logic; 
 
   --FETCH STAGE SIGNALS
-  RDMEM: std_logic;
-  RDADDR: std_logic_vector(33 downto 0);
-  INST: INSTRUCTION;
-  FETCHED_INST: INSTRUCTION;
-  NOT_JMP_TAKEN, FLUSH_PIPELINE: std_logic;
-  OLD_ALU_FLAGS: ALU_FLAGS -- TODO replace with register content (branch condition is on register contents)
-  FALLBACK_ADDRESS: CODE_ADDRESS;
+  signal RDMEM: std_logic;
+  signal RDADDR: std_logic_vector(33 downto 0);
+  signal INST: INSTRUCTION;
+  signal FETCHED_INST: INSTRUCTION;
+  signal NOT_JMP_TAKEN, FLUSH_PIPELINE: std_logic;
+  signal OLD_ALU_FLAGS: ALU_FLAGS; -- TODO replace with register content (branch condition is on register contents)
+  signal FALLBACK_ADDRESS: CODE_ADDRESS;
 
 BEGIN
   the_datapath: ENTITY work.DLX_DATAPATH 
@@ -43,12 +43,12 @@ BEGIN
   PORT MAP(CLK, RESET, RDMEM, RDADDR, INST, FETCHED_INST, NOT_JMP_TAKEN, FLUSH_PIPELINE, OLD_ALU_FLAGS, FALLBACK_ADDRESS);
   
   the_code_memory: ENTITY work.IRAM
-  PORT MAP(Rst => RESET, Addr => RDADDR, Dout => INST);
+  PORT MAP(Rst => RESET, Addr => RDADDR(5 downto 0), Dout => INST);
 
   the_CU: ENTITY work.DLX_CU
   PORT MAP(
             CLK => CLK,
-            RST => RST,
+            RST => RESET,
             OPCODE => FETCHED_INST(31 downto 26),
             FUNC_IN => FETCHED_INST(10 downto 0),
             PC_EN => open,

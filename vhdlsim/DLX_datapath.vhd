@@ -1,7 +1,7 @@
 library IEEE;
 use IEEE.std_logic_1164.all;
 use work.myTypes.all;
-
+use work.mux_generic_input.all;
 
 ENTITY DLX_DATAPATH IS
   PORT(
@@ -50,7 +50,7 @@ ARCHITECTURE dlx_simple OF DLX_DATAPATH IS
 
   signal pipe1a_in, pipe1a_out: REGISTER_CONTENT;
   signal pipe1b_in, pipe1b_out: REGISTER_CONTENT;
-  signal pipe1in2_in, pipe1in2_out, memory_out, pipe3out_out: REGISTER_CONTENT;-- We put immediate in the B side of the ALU so that we can make SUBI
+  signal pipe1in1_in, pipe1in1_out, pipe1in2_in, pipe1in2_out, memory_out, pipe3out_out: REGISTER_CONTENT;-- We put immediate in the B side of the ALU so that we can make SUBI
   signal pipe1rd1_out, pipe2rd2_out: REG_ADDRESS;
   signal ALU_A, ALU_B, ALU_OUT, pipe2aluout_out, pipe2me_out, writeback_data: REGISTER_CONTENT;-- Data input for ALU
   signal regO_out, regBa_out, rightA_out, rightB_out: REGISTER_CONTENT;-- Data input for ALU
@@ -83,7 +83,7 @@ BEGIN
   pipe1b: ENTITY work.REG_GENERIC
   GENERIC MAP(WIDTH => REGISTER_SIZE) PORT MAP (D => pipe1b_in, CK => CLK, RESET => RESET, Q => pipe1b_out);
 
-  pipe1in2: ENTITY work.REG_GENERIC
+  pipe1in1: ENTITY work.REG_GENERIC
   GENERIC MAP(WIDTH => REGISTER_SIZE) PORT MAP(D => pipe1in1_in, CK => CLK, RESET => RESET, Q => pipe1in1_out);
 
   pipe1in2: ENTITY work.REG_GENERIC
@@ -99,7 +99,7 @@ BEGIN
 
   --This should be a std_logic_vector assignment, no comment
   --Selection is driven from outside: 0 is "0000", 1 is real register, 2 is input from regO, 3 is regBa
-  assign_values: for i in 0 to REGISTER_SIZE-1 loop
+  assign_values: for i in 0 to REGISTER_SIZE-1 generate
 
     input_for_right_a(0,i)<='0';
     input_for_right_a(1,i)<=pipe1a_out(i);
@@ -110,7 +110,7 @@ BEGIN
     input_for_right_b(1,i)<=pipe1b_out(i);
     input_for_right_b(2,i)<=regO_out(i);
     input_for_right_b(3,i)<=regBa_out(i);
-  end loop;
+  end generate;
 
   which_is_right_a: ENTITY work.MUX_GENERIC
   GENERIC MAP(WIDTH => REGISTER_SIZE, HEIGHT => 4) PORT MAP(A => input_for_right_a, S => SELECT_REGA, Y => rightA_out);
@@ -157,7 +157,7 @@ BEGIN
   --MEM/WB STAGE
 
   memory: ENTITY work.MEMORY_STAGE
-  PORT MAP(CLK => CLK, RESET => RESET, ADDR => pipe2aluout_out, RD_MEM => RM, WR => WM, SIGN => SIGN, LH => LH, LB => LB, DATAIN => pipe2me_out, DATA_OUT => memory_out);
+  PORT MAP(CLK => CLK, RESET => RESET, ADDR => pipe2aluout_out, RD_MEM => RM, WR => WM, SIGN => SIGN, LH => LH, LB => LB, DATA_IN => pipe2me_out, DATA_OUT => memory_out);
   pipe3out: ENTITY work.REG_GENERIC
   GENERIC MAP(WIDTH => REGISTER_SIZE) PORT MAP(D => writeback_data, CK => CLK, RESET => RESET, Q => pipe3out_out);
 
