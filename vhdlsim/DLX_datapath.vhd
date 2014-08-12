@@ -121,6 +121,40 @@ BEGIN
   select_immediate: ENTITY work.MUX21_GENERIC
   GENERIC MAP(WIDTH => REGISTER_SIZE) PORT MAP(A=>rightB_out, B=> pipe1in2_out, S=>S1, Y => ALU_B);
 
+  --ALU OPCODES
+  --5 bits
+  --1st bit is Immediate/register switch (used to select NOT or LH - 1=LH, 0=NOT)
+  --2 bits=unit
+  --00=arith
+  --01=logic
+  --10/11=shifter
+  --
+  --Arithmetics
+  --00xx
+  --00=ADD
+  --01=SUB (bit 0 goes to sign selector)
+  --
+  --10=MUL (unsigned)
+  --11=MUL (signed)
+  --
+  --Logic
+  --01xx
+  --
+  --00=OR
+  --01=AND
+  --10=XOR
+  --(11=NOT?)
+  --
+  --Shifter
+  --10xx/11xx=1xxx
+  --
+  --Last bit is L/R
+  --Middle bit is Shift/Rotate
+  --MSB is Logic/Arith - When not used, it can be used for sign extension of the operand - EDIT: Note that this is not needed as the operand is only 5 bits
+  --i.e.
+  --101=Logic rotate Left
+  --010=Arith shift right
+  --and so on..
   myAlu: ENTITY work.DLX_ALU
   PORT MAP(A => rightA_out, B=> ALU_B, OP => ALU, Y => ALU_OUT, FLAGS => ALU_FLAGS_OUT, Y_extended => OPEN); 
 
@@ -154,6 +188,12 @@ BEGIN
   --MEM/WB PIPES - What is "OUT" needed to?
   --MEM/WB STAGE
 
+  -- ADDR is the address of the data to read/write; if it is not aligned to the size of the data to read/write, it will be truncated.
+  -- E.g. if addr=xxxxx0111 and size=word, address will be truncated to xxxxx0100.
+  -- LH/LB control the size of the data to read/write:
+  -- LH=1, LB=1 => Byte
+  -- LH=1, LB=0 => Half word
+  -- LH=0, LB=0 => word
   memory: ENTITY work.MEMORY_STAGE
   PORT MAP(CLK => CLK, RESET => RESET, ADDR => pipe2aluout_out, RD_MEM => RM, WR => WM, SIGN => SIGN, LH => LH, LB => LB, DATAIN => pipe2me_out, DATA_OUT => memory_out);
   pipe3out: ENTITY work.REG_GENERIC
