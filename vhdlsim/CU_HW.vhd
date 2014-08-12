@@ -216,8 +216,9 @@ begin  -- dlx_cu_hw architecture
 	  	when "00"      => --all R-type shift operations
 
                         --generate signals common to all shift operations:
-                        cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-6 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-7) <= "01"; --the upper bit of ALU output is NOT used; set it to zero. second-last bit selects shifter output in the mux within the ALU.
-                        cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-11) <= "0";                                           --the SIGN output is NOT used; set it to zero
+                        cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-6 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-7) <= "01"; --upper bit of ALU control signals can pre-select within ALU between LH output and logic unit output; unused, set it to zero (logic unit).
+														--second-last bit selects shifter in the output mux within the ALU.
+                        cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-11) <= "0";                                          --the SIGN output is NOT used; set it to zero
 
 	    		--now look at bits 1,0 of IR (of IR_func) for exact instruction and generate specific signals.
                         case IR_func(1 downto 0) is
@@ -233,7 +234,7 @@ begin  -- dlx_cu_hw architecture
 	  	when "10"      => --all R-type arith/logic operations
 
 	    		--generate common signals to all arithmetic/logic operations:
-                        cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-6) <= "0"; --the upper bit of ALU output is NOT used; set it to zero. other 2 bits select add/sub output in the mux within the ALU.
+                        cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-6) <= "0"; --upper bit of ALU control signals can pre-select within ALU between LH output and logic unit output; set it to zero (logic unit).
 
 	    		--now look at bits 2,1,0 of IR (of IR_func) for exact instruction and generate specific signals.
                         case IR_func(2) is
@@ -277,10 +278,14 @@ begin  -- dlx_cu_hw architecture
 			end case;
 
 	  	when "01"|"11" => --all R-type set operations (further subdivision possible here: bit 4 of IR tells if the comparison must be signed or unsigned.)
-	    		--(TODO: generate common signals to all set operations)
-	    		--(TODO: now look at bits 2,1,0 of IR (of IR_func) for exact instruction and generate specific signals.
-		   	--DO IT IN PAIRS: if slt|sltu, then generate certain signals; if sgt|sgtu, then generate certain signals; and so on... then you'll finally set bit 4 to drive the "unsigned" pin of the comparator.)
-	    		--(TODO: as last activation signal, drive bit 4 of IR (of IR_func) directly to drive the "unsigned" pin of the comparator block.)
+
+	    		--generate common signals to all set operations
+			cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-6) <= "0"; --upper bit of ALU control signals can pre-select within ALU between LH output and logic unit output; set it to zero (logic unit).
+                        --(TODO: configure ALU's arithmetic unit for register-register subtraction (take same activation signals as R-type subtraction above).)
+			--(TODO: drive bit 4 of IR (of IR_func) directly to drive the "unsigned" pin of the arithmetic unit block)
+
+	    		--TODO: now look at bits 2,1,0 of IR (of IR_func) for exact instruction, and generate specific signals.
+		   	--^DO IT IN PAIRS: if slt|sltu, then generate certain signals (they're identical); if sgt|sgtu, then generate certain signals (identical); and so on...
 
 	  	when others => NULL; --panic! TODO: something like an error assertion could be useful here during testing.
 	  	end case;
