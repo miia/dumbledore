@@ -34,7 +34,7 @@ entity DLX_CU is
     S2           : out std_logic;  -- MUX-B Sel
     SELECT_REGA  : out std_logic_vector(1 downto 0); --2-bit signals driving the 4-input multiplexers to implement forwarding
     SELECT_REGB  : out std_logic_vector(1 downto 0);
-    ALU         : out ALUOP; -- ALU Operation Code (NOTE: ALUOP TYPE = 5 BITS)
+    ALU         : out ALUOP; -- ALU Operation Code (NOTE: ALUOP TYPE = 9 BITS)
     SIGN        : out std_logic;  -- signed/unsigned operation (if 1, activates sign extension from 16 to 32 bits)
     EN2      : out std_logic;  -- ALU Output Register Enable --TODO: ONLY USED IF REGISTERS HAVE "EN" INPUT
     
@@ -104,9 +104,9 @@ begin  -- dlx_cu_hw architecture
   S2  <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 1);
   SELECT_REGA <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 2 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 3);
   SELECT_REGB <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 4 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 5);
-  ALU <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 6 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 10); --NOTE: the control signals for the ALU are composed of 5 bits
-  SIGN <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 11);
-  EN2 <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 12);
+  ALU <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 6 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 14); --NOTE: the control signals for the ALU are composed of 9 bits
+  SIGN <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 15);
+  EN2 <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 16);
 
   -- control signals for stage 3 (MEM)
   RM  <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 0);
@@ -184,7 +184,7 @@ begin  -- dlx_cu_hw architecture
    CONTROL_SIGNALS_PROC : process (IR_opcode, IR_func)
    begin
 
-	cw <= (others => '0'); -- default is NOP.
+	cw <= (others => '0'); -- DEFAULT ASSIGNMENT: nop.
 
 	if(IR_opcode(OP_CODE_SIZE-1 downto 0) = "000000") then --all R-type instructions
 	--instruction is R-type (=Register-Register operations);
@@ -200,7 +200,7 @@ begin  -- dlx_cu_hw architecture
 
                 cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-5) <= "11"&"01"&"01"; --enable and pass regA and regB to ALU through muxes (by default, keep forwarding disabled; will possibly be enabled later)
                 --(leave ALU and SIGN signals to be set later;)
-                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-12) <= "1";                                                   --enable ALU output register
+                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-16) <= "1";                                                   --enable ALU output register
 
                 cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-6) <= "0000000"; --leave Data Memory completely unused - not activated, read and write disabled, output register disabled (Load Memory Register), etc. 
 
@@ -216,60 +216,62 @@ begin  -- dlx_cu_hw architecture
 	  	when "00"      => --all R-type shift operations
 
                         --generate signals common to all shift operations:
-                        cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-6 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-7) <= "01"; --upper bit of ALU control signals can pre-select within ALU between LH output and logic unit output; unused, set it to zero (logic unit).
-														--second-last bit selects shifter in the output mux within the ALU.
-                        cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-11) <= "0";                                          --the SIGN output is NOT used; set it to zero
+                        cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9) <= "0"; -- bit 5 of ALU control signals can pre-select within ALU between LH output and logic unit output; unused, set it to zero (logic unit).
+
+                        cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-11) <= "10"; --bits 4,3 of ALU control signal select shifter in the output mux within the ALU.
+
+                        cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= "0";                                          --the SIGN output is NOT used; set it to zero
 
 	    		--now look at bits 1,0 of IR (of IR_func) for exact instruction and generate specific signals.
                         case IR_func(1 downto 0) is
 			when "00" => -- SLL
-                                     cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-8 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10) <= "111"; --Logical; Shift; Left
+                                     cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-12 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "111"; --Logical; Shift; Left
 			when "10" => -- SRL
-                                     cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-8 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10) <= "110"; --Logical; Shift; Right
+                                     cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-12 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "110"; --Logical; Shift; Right
 			when "11" => -- SRA
-                                     cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-8 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10) <= "010"; --Arithmetic; Shift; Right
+                                     cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-12 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "010"; --Arithmetic; Shift; Right
 			when others => NULL; --if Opcode not recognized, leave NOP.
                         end case;
 
 	  	when "10"      => --all R-type arith/logic operations
 
 	    		--generate common signals to all arithmetic/logic operations:
-                        cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-6) <= "0"; --upper bit of ALU control signals can pre-select within ALU between LH output and logic unit output; set it to zero (logic unit).
+                        cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9) <= "0"; --bit 5 of ALU control signals can pre-select within ALU between LH output and logic unit output; set it to zero (logic unit).
 
 	    		--now look at bits 2,1,0 of IR (of IR_func) for exact instruction and generate specific signals.
                         case IR_func(2) is
                         when "0" => --it's an arithmetic (ADD/SUB) operation;
 
-                                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-7 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-8) <= "00"; --needs the ADD/SUB block of the ALU to be selected in the output mux inside the ALU. generate corresponding signal.
+                                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-11) <= "00"; --needs the ADD/SUB block of the ALU to be selected in the output mux inside the ALU. generate corresponding signal.
 
                         	case IR_func(1 downto 0) is
 				when "00" => -- ADD
-                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10) <= "10"; --select output of adder/subtractor, request addition
-                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-11) <= "0";                                           --signed.
+                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "10"; --select output of adder/subtractor, request addition
+                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= "0";                                           --signed.
 				when "01" => -- ADDU
-                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10) <= "10"; --select output of adder/subtractor, request addition
-                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-11) <= "1";                                           --unsigned.
+                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "10"; --select output of adder/subtractor, request addition
+                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= "1";                                           --unsigned.
 				when "10" => -- SUB
-                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10) <= "11"; --select output of adder/subtractor, request subtraction
-                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-11) <= "0";                                           --signed.
+                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "11"; --select output of adder/subtractor, request subtraction
+                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= "0";                                           --signed.
 				when "11" => -- SUBU
-                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10) <= "11"; --select output of adder/subtractor, request subtraction
-                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-11) <= "1";                                           --unsigned.
+                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "11"; --select output of adder/subtractor, request subtraction
+                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= "1";                                           --unsigned.
 
 				when others => NULL; --if Opcode not recognized, leave NOP.
                         	end case;
 
 			when "1" => --it's a logic operation;
 
-                                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-7 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-8) <= "01"; --needs the Logic block of the ALU to be selected in the output mux inside the ALU. generate corresponding signal.
+                                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-11) <= "01"; --needs the Logic block of the ALU to be selected in the output mux inside the ALU. generate corresponding signal.
 
                         	case IR_func(1 downto 0) is
 				when "00" => -- AND
-                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10) <= "01"; --select AND
+                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "01"; --select AND
 				when "01" => -- OR
-                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10) <= "00"; --select OR
+                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "00"; --select OR
 				when "10" => -- XOR
-                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10) <= "10"; --select XOR
+                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "10"; --select XOR
 
 				when others => NULL; --if Opcode not recognized, leave NOP.
                         	end case;
@@ -279,13 +281,35 @@ begin  -- dlx_cu_hw architecture
 
 	  	when "01"|"11" => --all R-type set operations (further subdivision possible here: bit 4 of IR tells if the comparison must be signed or unsigned.)
 
-	    		--generate common signals to all set operations
-			cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-6) <= "0"; --upper bit of ALU control signals can pre-select within ALU between LH output and logic unit output; set it to zero (logic unit).
-                        --(TODO: configure ALU's arithmetic unit for register-register subtraction (take same activation signals as R-type subtraction above).)
-			--(TODO: drive bit 4 of IR (of IR_func) directly to drive the "unsigned" pin of the arithmetic unit block)
+	    		--generate common signals to all set operations:
 
-	    		--TODO: now look at bits 2,1,0 of IR (of IR_func) for exact instruction, and generate specific signals.
-		   	--^DO IT IN PAIRS: if slt|sltu, then generate certain signals (they're identical); if sgt|sgtu, then generate certain signals (identical); and so on...
+			cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9) <= "0"; --bit 5 of ALU control signals can pre-select within ALU between LH output and logic unit output; unused, set it to zero (logic unit).
+
+                        cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-11) <= "11"; --needs the Logic block of the ALU to be selected in the output mux inside the ALU. generate corresponding signal.
+
+                        --configure ALU's arithmetic unit for register-register subtraction (take same activation signals as R-type subtraction above).
+			cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "11"; --pre-select output of adder/subtractor within arithmetic unit, request subtraction
+                        cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= IR_func(4); --use bit 4 of IR (of IR_func) directly to drive the "unsigned" pin of the arithmetic unit block
+
+
+	    		--now look at bits 2,1,0 of IR (of IR_func) for exact instruction, and generate specific signals (to configure the Compare unit).
+		   	--THIS IS DONE IN PAIRS: slt|sltu will have identical signals (signed/unsigned has already been taken care of); same for sgt|sgtu, etc.
+
+			case IR_func(2 downto 0) is
+			when "000" => -- SEQ
+                        	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-6 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-8) <= "010";
+			when "001" => -- SNE
+                        	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-6 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-8) <= "011";
+			when "010" => -- SLT/SLTU
+                        	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-6 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-8) <= "000";
+			when "011" => -- SGT/SGTU
+                        	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-6 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-8) <= "101";
+			when "100" => -- SLE/SLEU
+                        	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-6 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-8) <= "001";
+			when "101" => -- SGE/SGEU
+                        	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-6 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-8) <= "100";
+			when others => NULL; --if Opcode not recognized, leave NOP.
+                       	end case;
 
 	  	when others => NULL; --panic! TODO: something like an error assertion could be useful here during testing.
 	  	end case;

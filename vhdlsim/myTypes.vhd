@@ -6,10 +6,10 @@ package myTypes is
 
    -- Control unit sizes
     constant IR_SIZE : integer := 32; --size of the whole instruction (divided in [OPCODE, R1, R2, IMMEDIATE] or [OPCODE, R1, R2, R3, FUNC] )
-    constant CW_SIZE : integer := 28; --number of control signals output by the Control Unit
+    constant CW_SIZE : integer := 32; --number of control signals output by the Control Unit
     constant CW_IF_SIZE : integer := 3;  --number of bits going from the CW to the IF stage
     constant CW_ID_SIZE : integer := 3;  --number of bits going from the CW to the ID stage
-    constant CW_EX_SIZE : integer := 13;  --number of bits going from the CW to the EX stage
+    constant CW_EX_SIZE : integer := 17;  --number of bits going from the CW to the EX stage
     constant CW_MEM_SIZE : integer := 7; --number of bits going from the CW to the MEM stage
     constant CW_WB_SIZE : integer := 2;  --number of bits going from the CW to the WB stage
 
@@ -22,7 +22,7 @@ package myTypes is
     subtype INST_CODE is std_logic_vector(OP_INST_CODE_SIZE-1 downto 0);
     constant FUNC_SIZE : integer :=  11;                                             -- FUNC field size
     subtype FUNC is std_logic_vector(FUNC_SIZE-1 downto 0);
-    subtype ALUOP is std_logic_vector(4 downto 0);
+    subtype ALUOP is std_logic_vector(8 downto 0);
     constant ALU_FLAGS_SIZE: integer := 1;
     subtype ALU_FLAGS is std_logic_vector(ALU_FLAGS_SIZE-1 downto 0);
     subtype INSTRUCTION is std_logic_vector(IR_SIZE -1 downto 0);
