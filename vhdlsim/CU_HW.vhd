@@ -367,36 +367,78 @@ begin  -- dlx_cu_hw architecture
 
 
 	elsif(IR_opcode(OP_CODE_SIZE-1 downto OP_CODE_SIZE-1-2) = "001") then --some more I-type instructions: either lhi, or an arithmetic/logic instruction with immediate operand
-                                                                              --I-type => from left to right, first 6 bits of IR are the Opcode field, then 5 bits are R1, 5 bits are R2, and 16 bits are the Immediate field.
+                                                                          --I-type => from left to right, first 6 bits of IR are the Opcode field, then 5 bits are R1, 5 bits are R2, and 16 bits are the Immediate field.
 
-                 --(WARNING/TODO: lhi is covered in this "if" too, so maybe (depending on ISA) all other load/stores will be included here as well, and a sub-condition will distinguish between load/stores and arith/logic) 
+        --(WARNING: lhi is covered here because it's an I-type instruction, while lh, lhu, sh and all other R-type load/stores are covered elsewhere.)
 
-  		--(TODO: generate common signals to all I-type operations)
-		--(TODO: generate activation signals common to all lhi AND arithmetic/logic operations)
-		--(TODO: distinguish betweeh lhi and arithmetic/logic instruction; generate respective signals)
+  		--generate common signals to all I-type operations
+        cw(CW_SIZE-1 downto CW_SIZE-1-2) <= "111"; --enable all registers of the IF stage
+
+        cw(CW_SIZE-1-CW_IF_SIZE downto CW_SIZE-1-CW_IF_SIZE-2) <= "111"; --enable RF and corresponding output registers in the ID stage
+
+        cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-5) <= "01"&"01"&"01"; --muxes will pass regA and the immediate operand (by default, keep forwarding disabled; will possibly be enabled later)
+                --(leave ALU and SIGN signals to be set later;)
+        cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-16) <= "1";                                                  --enable ALU output register
+
+        cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-6) <= "0000000"; --leave Data Memory completely unused - not activated, read and write disabled, output register disabled (Load Memory Register), etc. 
+
+        cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE-1) <= "11"; --mux passes output of ALU in the Writeback stage; Register File Write enabled.
+
+
+		--distinguish between arithmetic vs lhi/logic instruction; generate respective signal for the big output mux of the ALU.
+        case IR_opcode(2) is
+        when "0" => --addi, addui, subi, or subui instruction (=> select adder-subtractor in the big output mux).
+
+                    cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-11) <= "00"; --needs the Arithmetic (adder-subtractor) block of the ALU to be selected in the output mux inside the ALU. generate corresponding signal.
+
+                    case IR_opcode(1 downto 0) is
+                    when "00" => --ADDI
+
+                                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "10"; --select output of adder/subtractor, request addition
+                                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= "0";                                            --signed.
+                                
+                    when "01" => --ADDUI
+
+                                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "10"; --select output of adder/subtractor, request addition
+                                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= "1";                                            --unsigned.
+                                
+                    when "10" => --SUBI
+
+                               	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "11"; --select output of adder/subtractor, request subtraction
+                               	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= "0";                                            --signed.
+                                
+                    when "11" => --SUBUI
+                                
+                                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "11"; --select output of adder/subtractor, request subtraction
+                                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= "1";                                            --unsigned.
+
+                    end case;
+
+        when "1" => --andi, ori, xori, or lhi instruction (=> select logic/lh in the big output mux).
+
+                    cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-11) <= "01"; --needs the Logic (or LH) block of the ALU to be selected in the output mux inside the ALU. generate corresponding signal.
+
+                    case IR_opcode(1 downto 0) is
+                    when "00" => --ANDI
+                                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9) <= "0"; -- pre-select Logic unit: bit 5 of ALU control signals can pre-select within ALU between LH output and logic unit output; set it to zero (logic unit).
+                                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "01"; --select AND
+
+                    when "01" => --ORI
+                                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9) <= "0"; -- pre-select Logic unit: bit 5 of ALU control signals can pre-select within ALU between LH output and logic unit output; set it to zero (logic unit).
+                                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "00"; --select OR
+
+                    when "10" => --XORI
+                                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9) <= "0"; -- pre-select Logic unit: bit 5 of ALU control signals can pre-select within ALU between LH output and logic unit output; set it to zero (logic unit).
+                                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "10"; --select XOR
+
+                    when "11" => --LHI
+                                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9) <= "1"; -- pre-select LH unit: bit 5 of ALU control signals can pre-select within ALU between LH output and logic unit output; set it to one (LH unit).
+                                --nothing else to do here; LH block doesn't need any configuration - it just outputs the only possible result.
+                                
+                    end case;
+        end case;
+
 		--(TODO: look at bits 28-27-26 of IR (bits 2-1-0 of IR_opcode) for exact instruction and generate specific signals.)
-
-                --OLD EXAMPLE:
-		--decide all control bits by just looking at the Opcode field (even the ALU control bits: in this case, there is no Function field => they only depend on the Opcode field.)
-		--case IR_opcode is
-		--	when CODE_ITYPE_ADD1 => cw <= "01110"&"00"&"100011";
-		--	when CODE_ITYPE_SUB1 => cw <= "01110"&"01"&"100011";
-		--	when CODE_ITYPE_AND1 => cw <= "01110"&"10"&"100011";
-		--	when CODE_ITYPE_OR1  => cw <= "01110"&"11"&"100011";
-		--	when CODE_ITYPE_ADD2 => cw <= "10101"&"00"&"100011";  --like ADD1, except S1 and S2 are different (ALU receives input from A,INP2 instead of INP1,B)
-		--	when CODE_ITYPE_SUB2 => cw <= "10101"&"01"&"100011";  --same here.
-		--	when CODE_ITYPE_AND2 => cw <= "10101"&"10"&"100011";  --same here.
-		--	when CODE_ITYPE_OR2  => cw <= "10101"&"11"&"100011";  --same here.
-
-		--      when CODE_ITYPE_MOV    => cw <= "10101"&"00"&"100011"; --SAME OPCODE as add1 (mov is implemented as add1 with INP1=0)
-		--	when CODE_ITYPE_SREG1  => cw <= "00111"&"00"&"100011";
-	      	--	when CODE_ITYPE_SREG2  => cw <= "00111"&"00"&"100011";
-		--	when CODE_ITYPE_SMEM2  => cw <= "11101"&"00"&"110100"; --sum content from regfile + INP2; use result as address to write on DataMem (writing the other content coming from regfile).
-		--	when CODE_ITYPE_LMEM1  => cw <= "01110"&"00"&"101101"; --sum content from regfile + INP1; use result as address to read from DataMem; write result into regfile.
-		--	when CODE_ITYPE_LMEM2  => cw <= "10101"&"00"&"101101"; --RIGHT? i'm dead, someone check this out later.
-			    
-		--	when others => NULL; --if Opcode not recognized, leave NOP.
-		--end case;
 
 
 
