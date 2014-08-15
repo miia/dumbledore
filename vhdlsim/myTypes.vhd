@@ -13,6 +13,8 @@ package myTypes is
     constant CW_MEM_SIZE : integer := 7; --number of bits going from the CW to the MEM stage
     constant CW_WB_SIZE : integer := 2;  --number of bits going from the CW to the WB stage
 
+    constant NOP_SIGNALS : std_logic_vector(CW_SIZE-1 downto 0) := (others=>"0"); --sending all zeroes everywhere in the datapath leaves all registers and memories disabled => effectively acts as a NOP.
+
     constant OP_CODE_SIZE : integer :=  6;                                              -- OPCODE field size
     constant REG_ADDRESS_SIZE: integer := 5;
     subtype CODE is std_logic_vector (OP_CODE_SIZE-1 downto 0);
