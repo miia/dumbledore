@@ -317,7 +317,7 @@ begin  -- dlx_cu_hw architecture
 
 
 	elsif(IR_opcode(OP_CODE_SIZE-1 downto OP_CODE_SIZE-1-2) = "000") then --first 3 bits of Opcode field tell us this is an I-type branch or jump instruction (i.e., with an immediate operand, to be added to PC+4)
-                                                                              --I-type => from left to right, first 6 bits of IR are the Opcode field, then 5 bits are R1, 5 bits are R2, and 16 bits are the Immediate field.
+                                                                          --I-type => from left to right, first 6 bits of IR are the Opcode field, then 5 bits are R1, 5 bits are R2, and 16 bits are the Immediate field.
 
   		--(TODO: generate common signals to all I-type operations)
   		--(TODO: generate common signals to all branch or jump operations)
@@ -326,9 +326,9 @@ begin  -- dlx_cu_hw architecture
   		--(TODO: now look at bits 27,26 of IR (bits 1,0 of IR_opcode) for exact instruction and generate specific signals.)
 
 
-	elsif(IR_opcode(OP_CODE_SIZE-1 downto OP_CODE_SIZE-1-3) = "0101") then --bits 4 bits of Opcode field tell us this is an I-type shift instruction
-                                                                               --(i.e. a shift, but with immediate source; the R-type shift instructions, instead, have already been covered above)
-                                                                               --I-type => from left to right, first 6 bits of IR are the Opcode field, then 5 bits are R1, 5 bits are R2, and 16 bits are the Immediate field.
+	elsif(IR_opcode(OP_CODE_SIZE-1 downto OP_CODE_SIZE-1-3) = "0101") then --first 4 bits of Opcode field tell us this is an I-type shift instruction
+                                                                           --(i.e. a shift, but with immediate source; the R-type shift instructions, instead, have already been covered above)
+                                                                           --I-type => from left to right, first 6 bits of IR are the Opcode field, then 5 bits are R1, 5 bits are R2, and 16 bits are the Immediate field.
 
 		--generate common signals to all I-type operations
         cw(CW_SIZE-1 downto CW_SIZE-1-2) <= "111"; --enable all registers of the IF stage
@@ -366,7 +366,7 @@ begin  -- dlx_cu_hw architecture
 	--
 
 
-	elsif(IR_opcode(OP_CODE_SIZE-1 downto OP_CODE_SIZE-1-2) = "001") then --some more I-type instructions: either lhi, or an arithmetic/logic instruction with immediate operand
+	elsif(IR_opcode(OP_CODE_SIZE-1 downto OP_CODE_SIZE-1-2) = "001") then --first 3 bits of Opcode field tell us this is an I-type arithmetic/logic instruction (i.e. arithmetic/logic with immediate operand, including LHI).
                                                                           --I-type => from left to right, first 6 bits of IR are the Opcode field, then 5 bits are R1, 5 bits are R2, and 16 bits are the Immediate field.
 
         --(WARNING: lhi is covered here because it's an I-type instruction, while lh, lhu, sh and all other R-type load/stores are covered elsewhere.)
@@ -391,6 +391,7 @@ begin  -- dlx_cu_hw architecture
 
                     cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-11) <= "00"; --needs the Arithmetic (adder-subtractor) block of the ALU to be selected in the output mux inside the ALU. generate corresponding signal.
 
+                    --look at bits 28-27-26 of IR (bits 2-1-0 of IR_opcode) for exact instruction and generate specific signals.
                     case IR_opcode(1 downto 0) is
                     when "00" => --ADDI
 
@@ -418,6 +419,7 @@ begin  -- dlx_cu_hw architecture
 
                     cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-11) <= "01"; --needs the Logic (or LH) block of the ALU to be selected in the output mux inside the ALU. generate corresponding signal.
 
+                    --look at bits 28-27-26 of IR (bits 2-1-0 of IR_opcode) for exact instruction and generate specific signals.
                     case IR_opcode(1 downto 0) is
                     when "00" => --ANDI
                                 cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9) <= "0"; -- pre-select Logic unit: bit 5 of ALU control signals can pre-select within ALU between LH output and logic unit output; set it to zero (logic unit).
@@ -438,14 +440,9 @@ begin  -- dlx_cu_hw architecture
                     end case;
         end case;
 
-		--(TODO: look at bits 28-27-26 of IR (bits 2-1-0 of IR_opcode) for exact instruction and generate specific signals.)
 
 
-
-
-	-- TODO: any other instruction types in the future?
-
-	else => cw <= NOP_SIGNALS; --instruction is not recognized, fall back to NOP.
+	else => cw <= NOP_SIGNALS; --instruction is not recognized, fall back to NOP. -- TODO: first handle any other instruction types? (any instructions that can't be recognized using one of the above patterns.)
 
 	end if;
 
