@@ -163,24 +163,42 @@ begin  -- dlx_cu_hw architecture
    --Process to generate control signals for ALU--
    -----------------------------------------------
 
-   --LEGEND (TODO: update this with the version on MS server, whenever it comes up again!):
+   --LEGEND:
    --Remember that (timing/pipelining apart) the meaning of each bit in the cw signal is:
-   -- control signals for stage 1
-   --cw(CW_SIZE-1 - 0) corresponds to RF1; (1 = read out of port1)
-   --cw(CW_SIZE-1 - 1) corresponds to RF2; (1 = read out of port2)
-   --cw(CW_SIZE-1 - 2) corresponds to EN1; (1 = enable RF + interface registers of stage1)
-   -- control signals for stage 2
-   --cw(CW_SIZE-1 - 3) corresponds to S1; (0 = pass output from RF)
-   --cw(CW_SIZE-1 - 4) corresponds to S2; (0 = pass output from RF)
-   --cw(CW_SIZE-1 - 5 downto CW_SIZE-1 - 6) are the 2 control bits for the ALU;
-   --cw(CW_SIZE-1-  7) corresponds to EN2; (1 = enable interface registers of stage2)
-   -- control signals for stage 3
-   --cw(CW_SIZE-1 - 8) corresponds to RM;  (1 = write on Data Memory)
-   --cw(CW_SIZE-1 - 9) corresponds to WM;  (1 = read from Data Memory)
-   --cw(CW_SIZE-1 - 10) corresponds to EN3; (1 = enable Data Memory + interface registers of stage3)
-   --cw(CW_SIZE-1 - 11) corresponds to S3; (0 = pass output from Data Memory)
-   --cw(CW_SIZE-1-  12) corresponds to WF1; (1 = write on RegFile)
+   -- control signals for stage 0 (IF)
+   --cw(CW_SIZE-1 - 0) corresponds to PC_EN;          (1 = enable Program Counter register)
+   --cw(CW_SIZE-1 - 1) corresponds to IR_LATCH_EN;    (1 = enable IR Register)
+   --cw(CW_SIZE-1 - 2) corresponds to NPC_LATCH_EN;   (1 = enable New Program Counter register)
+
+   -- control signals for stage 1 (ID)
+   --cw(CW_SIZE-1-CW_IF_SIZE - 0) corresponds to RF1; (1 = read out of port1)
+   --cw(CW_SIZE-1-CW_IF_SIZE - 1) corresponds to RF2; (1 = read out of port2)
+   --cw(CW_SIZE-1-CW_IF_SIZE - 2) corresponds to EN1; (1 = enable RF and interface registers of stage1)
+
+   -- control signals for stage 2 (EX)
+   --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 0) corresponds to S1; (0 = pass output from RF out of multiplexer S1)
+   --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 1) corresponds to S2; (0 = pass output from RF out of multiplexer S2)
+   --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 2 downto CW_SIZE-1 - 3) correspond to SELECT_REGA;  ("00"=> all zeroes; "01"=> output A from RF; "10" => Output register (1st forwarding register); "11" => Backup register (2nd forwarding register).)
+   --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 4 downto CW_SIZE-1 - 5) correspond to SELECT_REGB;  ("00"=> all zeroes; "01"=> output B from RF; "10" => Output register (1st forwarding register); "11" => Backup register (2nd forwarding register).)
+   --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 6 downto CW_SIZE-1 - 14) are the 9 control bits for the ALU;
+   --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 15) corresponds to SIGN; (1 = Signed version of operations take place in the ALU; 0 = Unsigned version)
+   --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE  16) corresponds to EN2; (1 = enable interface registers of stage2)
+
+   -- control signals for stage 3 (MEM)
+   --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 0) corresponds to RM;  (1 = write on Data Memory (for store instructions))
+   --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 1) corresponds to WM;  (1 = read from Data Memory (for load instructions))
+   --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 2) corresponds to EN3; (1 = enable Data Memory)
+   --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 3) corresponds to EN_LMD (1 = enable Load Memory output register (for Load operations, enables the Data Memory output register. Not needed for Store operations on the Data Memory...))
+   --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 4) corresponds to LH   (LH,LB = "00" => load/store a word from Data Memory; "10"=>load/store a half word; "11"=> load/store a byte.)
+   --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 5) corresponds to LB   (LH,LB = "00" => load/store a word from Data Memory; "10"=>load/store a half word; "11"=> load/store a byte.)
+   --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 6) corresponds to SIGN (1 = in case of a Load from datamem, treat the the loaded value as signed => perform sign extension on 32-bits.)
+
+   --control signals for stage 4 (WB)
+   --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE - 0) corresponds to S3; (0 = pass output from Data Memory)
+   --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE - 1) corresponds to WF1; (1 = write on RegFile)
   
+
+
    CONTROL_SIGNALS_PROC : process (IR_opcode, IR_func) --TODO: maybe some error assertions (when the "others" cases are taken) could be useful during testing?
    begin
 
