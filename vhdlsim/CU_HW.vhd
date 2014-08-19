@@ -35,7 +35,7 @@ entity DLX_CU is
     SELECT_REGA  : out std_logic_vector(1 downto 0); --2-bit signals driving the big 4-input multiplexers to implement forwarding
     SELECT_REGB  : out std_logic_vector(1 downto 0);
     ALU         : out ALUOP; -- ALU Operation Code (NOTE: ALUOP TYPE = 9 BITS)
-    SIGN        : out std_logic;  -- signed/unsigned operation (if 1, activates sign extension from 16 to 32 bits)
+    SIGN_EX        : out std_logic;  -- signed/unsigned operation (if 1, activates sign extension from 16 to 32 bits)
     EN2      : out std_logic;  -- ALU Output Register Enable --TODO: ONLY USED IF REGISTERS HAVE "EN" INPUT
     
     -- MEM Control Signals
@@ -46,7 +46,7 @@ entity DLX_CU is
     EN_LMD       : out std_logic;  -- LMD (Load-Memory-Data) Register Latch Enable (for register at output of Data Mem) --TODO: ONLY USED IF REGISTERS HAVE "EN" INPUT
     LH            : out std_logic;  -- these 3 signals are used to tell the Data Memory whether we want to load a Byte, Half-Word or a Word...
     LB            : out std_logic;
-    SIGN          : out std_logic;  -- ...and whether we want the value to be treated as signed (=> activate sign-extension) or not.
+    SIGN_MEM          : out std_logic;  -- ...and whether we want the value to be treated as signed (=> activate sign-extension) or not.
 
     -- WB Control Signals
     S3         : out std_logic;  -- Write Back MUX Sel
@@ -77,9 +77,11 @@ architecture CU_HW of DLX_CU is
   --signal aluOpcode2: aluOp := NOP;
   --signal aluOpcode3: aluOp := NOP;
 
-
+  --signal IR_func_5_and_3 : std_logic_vector(1 downto 0); --VHDL doesn't allow "case IR_func(5)&IR_func(3) is ...", so we have to first route them to a separate signal and then perform the CASE statement on that.
  
 begin  -- dlx_cu_hw architecture
+    
+  --IR_func_5_and_3 <= IR_func(5)&IR_func(3); --the stupid fix - see above
 
   IR_opcode <= OPCODE;  -- previously was IR_IN(31 downto 26);
   IR_func <= FUNC_IN;   -- previously was IR_IN(FUNC_SIZE - 1 downto 0);
@@ -105,7 +107,7 @@ begin  -- dlx_cu_hw architecture
   SELECT_REGA <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 2 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 3);
   SELECT_REGB <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 4 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 5);
   ALU <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 6 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 14); --NOTE: the control signals for the ALU are composed of 9 bits
-  SIGN <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 15);
+  SIGN_EX <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 15);
   EN2 <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 16);
 
   -- control signals for stage 3 (MEM)
@@ -113,10 +115,10 @@ begin  -- dlx_cu_hw architecture
   WM  <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 1);
   EN3 <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 2);
 
-  EN_LMD <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 3);
-  LH     <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 4);
-  LB     <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 5);
-  SIGN   <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 6);
+  EN_LMD     <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 3);
+  LH         <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 4);
+  LB         <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 5);
+  SIGN_MEM   <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 6);
 
   -- control signals for stage 4 (WB)
   S3  <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE - 0);
@@ -181,7 +183,7 @@ begin  -- dlx_cu_hw architecture
    --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 2 downto CW_SIZE-1 - 3) correspond to SELECT_REGA;  ("00"=> all zeroes; "01"=> output A from RF; "10" => Output register (1st forwarding register); "11" => Backup register (2nd forwarding register).)
    --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 4 downto CW_SIZE-1 - 5) correspond to SELECT_REGB;  ("00"=> all zeroes; "01"=> output B from RF; "10" => Output register (1st forwarding register); "11" => Backup register (2nd forwarding register).)
    --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 6 downto CW_SIZE-1 - 14) are the 9 control bits for the ALU;
-   --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 15) corresponds to SIGN; (1 = Signed version of operations take place in the ALU; 0 = Unsigned version)
+   --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 15) corresponds to SIGN_EX; (1 = Signed version of operations take place in the ALU; 0 = Unsigned version)
    --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE  16) corresponds to EN2; (1 = enable interface registers of stage2)
 
    -- control signals for stage 3 (MEM)
@@ -191,7 +193,7 @@ begin  -- dlx_cu_hw architecture
    --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 3) corresponds to EN_LMD (1 = enable Load Memory output register (for Load operations, enables the Data Memory output register. Not needed for Store operations on the Data Memory...))
    --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 4) corresponds to LH   (LH,LB = "00" => load/store a word from Data Memory; "10"=>load/store a half word; "11"=> load/store a byte.)
    --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 5) corresponds to LB   (LH,LB = "00" => load/store a word from Data Memory; "10"=>load/store a half word; "11"=> load/store a byte.)
-   --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 6) corresponds to SIGN (1 = in case of a Load from datamem, treat the the loaded value as signed => perform sign extension on 32-bits.)
+   --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 6) corresponds to SIGN_MEM (1 = in case of a Load from datamem, treat the the loaded value as signed => perform sign extension on 32-bits.)
 
    --control signals for stage 4 (WB)
    --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE - 0) corresponds to S3; (0 = pass output from Data Memory)
@@ -217,8 +219,8 @@ begin  -- dlx_cu_hw architecture
         cw(CW_SIZE-1-CW_IF_SIZE downto CW_SIZE-1-CW_IF_SIZE-2) <= "111"; --enable RF and corresponding output registers in the ID stage
 
         cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-5) <= "11"&"01"&"01"; --enable and pass regA and regB to ALU through muxes (by default, keep forwarding disabled; will possibly be enabled later)
-        --(leave ALU and SIGN signals to be set later;)
-        cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-16) <= "1";                                                   --enable ALU output register
+        --(leave ALU and SIGN_EX signals to be set later;)
+        cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-16) <= '1';                                                   --enable ALU output register
 
         cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-6) <= "0000000"; --leave Data Memory completely unused - not activated, read and write disabled, output register disabled (Load Memory Register), etc. 
 
@@ -228,17 +230,17 @@ begin  -- dlx_cu_hw architecture
 		--2) Decide value of ALU control bits:
 
 		--since the instruction is R-type, to decide the ALU activation signals we also need to look at the Function bits of IR (=least significant 11 bits)
-	  	case IR_func(5)&IR_func(3) is --bits 5,3 of IR tell us which of 3 R-type sub-classes the operation belongs to;
+	  	case IR_func(5 downto 3) is --bits 5,3 of IR tell us which of 3 R-type sub-classes the operation belongs to; THE MIDDLE BIT (4) is ignored here.
 				              --this allows us to first generate a subset of signals common to that sub-class (i.e., the signals common to all R-type shift operations) before finally generating the few signals specific to the exact instruction.
 				              --cleaner code FTW!
-	  	when "00"      => --all R-type shift operations
+	  	when "000"|"010"      => --(5,3)=(0,0) => all R-type shift operations
 
             --generate signals common to all shift operations:
-            cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9) <= "0"; -- bit 5 of ALU control signals can pre-select within ALU between LH output and logic unit output; unused, set it to zero (logic unit).
+            cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9) <= '0'; -- bit 5 of ALU control signals can pre-select within ALU between LH output and logic unit output; unused, set it to zero (logic unit).
 
             cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-11) <= "10"; --bits 4,3 of ALU control signal select shifter in the output mux within the ALU.
 
-            cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= "0"; --the SIGN output is NOT used; set it to zero
+            cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= '0'; --the SIGN_EX output is NOT used; set it to zero
 
 	        --now look at bits 1,0 of IR (of IR_func) for exact instruction and generate specific signals.
             case IR_func(1 downto 0) is
@@ -251,35 +253,35 @@ begin  -- dlx_cu_hw architecture
 			when others => cw <= NOP_SIGNALS; --instruction is not recognized, fall back to NOP.
             end case;
 
-	  	when "10"      => --all R-type arith/logic operations
+	  	when "100"|"110"      => --(5,3)=(1,0) => all R-type arith/logic operations
 
 	    	--generate common signals to all arithmetic/logic operations:
-            cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9) <= "0"; --bit 5 of ALU control signals can pre-select within ALU between LH output and logic unit output; set it to zero (logic unit).
+            cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9) <= '0'; --bit 5 of ALU control signals can pre-select within ALU between LH output and logic unit output; set it to zero (logic unit).
 
 	    	--now look at bits 2,1,0 of IR (of IR_func) for exact instruction and generate specific signals.
             case IR_func(2) is
-            when "0" => --it's an arithmetic (ADD/SUB) operation;
+            when '0' => --it's an arithmetic (ADD/SUB) operation;
 
                 cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-11) <= "00"; --needs the ADD/SUB block of the ALU to be selected in the output mux inside the ALU. generate corresponding signal.
 
                 case IR_func(1 downto 0) is
 				when "00" => -- ADD
                                      	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "10"; --select output of adder/subtractor, request addition
-                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= "0";                                           --signed.
+                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= '0';                                           --signed.
 				when "01" => -- ADDU
                                      	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "10"; --select output of adder/subtractor, request addition
-                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= "1";                                           --unsigned.
+                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= '1';                                           --unsigned.
 				when "10" => -- SUB
                                      	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "11"; --select output of adder/subtractor, request subtraction
-                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= "0";                                           --signed.
+                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= '0';                                           --signed.
 				when "11" => -- SUBU
                                      	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "11"; --select output of adder/subtractor, request subtraction
-                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= "1";                                           --unsigned.
+                                     	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= '1';                                           --unsigned.
 
 				when others => cw <= NOP_SIGNALS; --instruction is not recognized, fall back to NOP.
                 end case;
 
-            when "1" => --it's a logic operation;
+            when '1' => --it's a logic operation;
 
                 cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-11) <= "01"; --needs the Logic block of the ALU to be selected in the output mux inside the ALU. generate corresponding signal.
 
@@ -298,11 +300,11 @@ begin  -- dlx_cu_hw architecture
 			when others => cw <= NOP_SIGNALS; --instruction is not recognized, fall back to NOP.
 			end case;
 
-	  	when "01"|"11" => --all R-type set operations (further subdivision possible here: bit 4 of IR tells if the comparison must be signed or unsigned.)
+	  	when "001"|"101"|"011"|"111" => --(bit 3)=1 => all R-type set operations (further subdivision possible here: bit 4 of IR tells if the comparison must be signed or unsigned.)
 
 	    	--generate common signals to all set operations:
 
-			cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9) <= "0"; --bit 5 of ALU control signals can pre-select within ALU between LH output and logic unit output; unused, set it to zero (logic unit).
+			cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9) <= '0'; --bit 5 of ALU control signals can pre-select within ALU between LH output and logic unit output; unused, set it to zero (logic unit).
 
             cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-11) <= "11"; --needs the Logic block of the ALU to be selected in the output mux inside the ALU. generate corresponding signal.
 
@@ -354,8 +356,8 @@ begin  -- dlx_cu_hw architecture
         cw(CW_SIZE-1-CW_IF_SIZE downto CW_SIZE-1-CW_IF_SIZE-2) <= "111"; --enable RF and corresponding output registers in the ID stage
 
         cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-5) <= "01"&"01"&"01"; --muxes will pass regA and the immediate operand (by default, keep forwarding disabled; will possibly be enabled later)
-                --(leave ALU and SIGN signals to be set later;)
-        cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-16) <= "1";                                                  --enable ALU output register
+                --(leave ALU and _EX signals to be set later;)
+        cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-16) <= '1';                                                  --enable ALU output register
 
         cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-6) <= "0000000"; --leave Data Memory completely unused - not activated, read and write disabled, output register disabled (Load Memory Register), etc. 
 
@@ -395,8 +397,8 @@ begin  -- dlx_cu_hw architecture
         cw(CW_SIZE-1-CW_IF_SIZE downto CW_SIZE-1-CW_IF_SIZE-2) <= "111"; --enable RF and corresponding output registers in the ID stage
 
         cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-5) <= "01"&"01"&"01"; --muxes will pass regA and the immediate operand (by default, keep forwarding disabled; will possibly be enabled later)
-                --(leave ALU and SIGN signals to be set later;)
-        cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-16) <= "1";                                                  --enable ALU output register
+                --(leave ALU and SIGN_EX signals to be set later;)
+        cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-16) <= '1';                                                  --enable ALU output register
 
         cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-6) <= "0000000"; --leave Data Memory completely unused - not activated, read and write disabled, output register disabled (Load Memory Register), etc. 
 
@@ -405,7 +407,7 @@ begin  -- dlx_cu_hw architecture
 
 		--distinguish between arithmetic vs lhi/logic instruction; generate respective signal for the big output mux of the ALU.
         case IR_opcode(2) is
-        when "0" => --addi, addui, subi, or subui instruction (=> select adder-subtractor in the big output mux).
+        when '0' => --addi, addui, subi, or subui instruction (=> select adder-subtractor in the big output mux).
 
                     cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-11) <= "00"; --needs the Arithmetic (adder-subtractor) block of the ALU to be selected in the output mux inside the ALU. generate corresponding signal.
 
@@ -414,53 +416,66 @@ begin  -- dlx_cu_hw architecture
                     when "00" => --ADDI
 
                                 cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "10"; --select output of adder/subtractor, request addition
-                                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= "0";                                            --signed.
+                                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= '0';                                            --signed.
                                 
                     when "01" => --ADDUI
 
                                 cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "10"; --select output of adder/subtractor, request addition
-                                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= "1";                                            --unsigned.
+                                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= '1';                                            --unsigned.
                                 
                     when "10" => --SUBI
 
                                	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "11"; --select output of adder/subtractor, request subtraction
-                               	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= "0";                                            --signed.
+                               	cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= '0';                                            --signed.
                                 
                     when "11" => --SUBUI
                                 
                                 cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "11"; --select output of adder/subtractor, request subtraction
-                                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= "1";                                            --unsigned.
+                                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= '1';                                            --unsigned.
+
+                    when others =>
+                                cw <= NOP_SIGNALS;
 
                     end case;
 
-        when "1" => --andi, ori, xori, or lhi instruction (=> select logic/lh in the big output mux).
+        when '1' => --andi, ori, xori, or lhi instruction (=> select logic/lh in the big output mux).
 
                     cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-11) <= "01"; --needs the Logic (or LH) block of the ALU to be selected in the output mux inside the ALU. generate corresponding signal.
 
                     --look at bits 28-27-26 of IR (bits 2-1-0 of IR_opcode) for exact instruction and generate specific signals.
                     case IR_opcode(1 downto 0) is
                     when "00" => --ANDI
-                                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9) <= "0"; -- pre-select Logic unit: bit 5 of ALU control signals can pre-select within ALU between LH output and logic unit output; set it to zero (logic unit).
+                                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9) <= '0'; -- pre-select Logic unit: bit 5 of ALU control signals can pre-select within ALU between LH output and logic unit output; set it to zero (logic unit).
                                 cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "01"; --select AND
 
                     when "01" => --ORI
-                                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9) <= "0"; -- pre-select Logic unit: bit 5 of ALU control signals can pre-select within ALU between LH output and logic unit output; set it to zero (logic unit).
+                                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9) <= '0'; -- pre-select Logic unit: bit 5 of ALU control signals can pre-select within ALU between LH output and logic unit output; set it to zero (logic unit).
                                 cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "00"; --select OR
 
                     when "10" => --XORI
-                                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9) <= "0"; -- pre-select Logic unit: bit 5 of ALU control signals can pre-select within ALU between LH output and logic unit output; set it to zero (logic unit).
+                                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9) <= '0'; -- pre-select Logic unit: bit 5 of ALU control signals can pre-select within ALU between LH output and logic unit output; set it to zero (logic unit).
                                 cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "10"; --select XOR
 
                     when "11" => --LHI
-                                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9) <= "1"; -- pre-select LH unit: bit 5 of ALU control signals can pre-select within ALU between LH output and logic unit output; set it to one (LH unit).
+                                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9) <= '1'; -- pre-select LH unit: bit 5 of ALU control signals can pre-select within ALU between LH output and logic unit output; set it to one (LH unit).
                                 --nothing else to do here; LH block doesn't need any configuration - it just outputs the only possible result.
                                 
+                    when others =>
+                                cw <= NOP_SIGNALS;
+                                
                     end case;
+                    
+                    
+        when others =>
+                    cw <= NOP_SIGNALS;
+                    
+                    
         end case;
 
 
 
-	else => cw <= NOP_SIGNALS; --instruction is not recognized, fall back to NOP. -- TODO: first handle any other instruction types? (any instructions that can't be recognized using one of the above patterns.)
+	else
+	     cw <= NOP_SIGNALS; --instruction is not recognized, fall back to NOP. -- TODO: first handle any other instruction types? (any instructions that can't be recognized using one of the above patterns.)
 
 	end if;
 
