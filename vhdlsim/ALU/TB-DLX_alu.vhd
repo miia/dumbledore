@@ -17,7 +17,6 @@ ARCHITECTURE boh OF TB_DLX_ALU IS
 
   signal Cout: std_logic_vector(1 downto 0);
   signal OP: ALUOP := "000000000";
-  signal FLAGS: ALU_FLAGS;                  
 begin
 
   
@@ -133,7 +132,7 @@ rand_temp(0) := temp;
   end process;
   
   testcomp: ENTITY work.DLX_ALU
-  PORT MAP(OP => OP, A => A, B => B, Y => Y, Y_extended => Y2, FLAGS => FLAGS);
+  PORT MAP(OP => OP, A => A, B => B, Y => Y, Y_extended => Y2 );
 
    Yu(REGISTER_SIZE-1 downto 0) <= unsigned(Y(REGISTER_SIZE-1 downto 0));
    Ys(REGISTER_SIZE-1 downto 0) <= signed(Y(REGISTER_SIZE-1 downto 0));
@@ -145,5 +144,4 @@ rand_temp(0) := temp;
    
    Bu(REGISTER_SIZE-1 downto 0) <= unsigned(B(REGISTER_SIZE-1 downto 0));
    Bs(REGISTER_SIZE-1 downto 0) <= signed(B(REGISTER_SIZE-1 downto 0));
-   Cout <= "0" & FLAGS(0);
 END ARCHITECTURE;

@@ -25,7 +25,7 @@ package myTypes is
     constant FUNC_SIZE : integer :=  11;                                             -- FUNC field size
     subtype FUNC is std_logic_vector(FUNC_SIZE-1 downto 0);
     subtype ALUOP is std_logic_vector(8 downto 0);
-    constant ALU_FLAGS_SIZE: integer := 1;
+    constant ALU_FLAGS_SIZE: integer := 2; -- Flags are Cout, Zero
     subtype ALU_FLAGS is std_logic_vector(ALU_FLAGS_SIZE-1 downto 0);
     subtype INSTRUCTION is std_logic_vector(IR_SIZE -1 downto 0);
     subtype REG_ADDRESS is std_logic_vector(REG_ADDRESS_SIZE-1 downto 0);

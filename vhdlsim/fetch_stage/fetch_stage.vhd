@@ -17,7 +17,7 @@ ENTITY FETCH_STAGE IS
     -- Not needed anymore? I'm mergine BPU *and* related registers **and* checks of right/wrong prediction *into* fetch stage PC: out CODE_ADDRESS
     FLUSH_PIPELINE: out std_logic; -- As before, this is needed for the merge; could be smart
 
-    --Get the current status of flags 
+    --Get the current status of result 
     OLD_ALU_FLAGS: in ALU_FLAGS;
 
   --What to replace the PC with in case of wrong prediction
