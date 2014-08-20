@@ -26,7 +26,7 @@ ENTITY DLX_DATAPATH IS
  SELECT_REGB : in std_logic_vector(1 downto 0);
  ALU         : in ALUOP; -- ALU Operation Code
  EN2      : in std_logic;  -- ALU Output Register Enable
- ALU_FLAGS_OUT: out ALU_FLAGS;
+ RB_OUT: out REGISTER_CONTENT;
  
  -- MEM/WB Control Signals
  RM            : in std_logic;  -- Data RAM Read Enable
@@ -117,6 +117,8 @@ BEGIN
 
   which_is_right_b: ENTITY work.MUX_GENERIC
   GENERIC MAP(WIDTH => REGISTER_SIZE, HEIGHT => 4) PORT MAP(A => input_for_right_b, S => SELECT_REGB, Y => rightB_out);
+  -- This signal will be used by the fetch stage to check for branches
+  RB_OUT <= rightB_out;
   ----------------------------------------------------------------------------------------------------------------------------
 
 
@@ -158,7 +160,7 @@ BEGIN
   --010=Arith shift right
   --and so on..
   myAlu: ENTITY work.DLX_ALU
-  PORT MAP(A => rightA_out, B=> ALU_B, OP => ALU, Y => ALU_OUT, FLAGS => ALU_FLAGS_OUT, Y_extended => OPEN); 
+  PORT MAP(A => rightA_out, B=> ALU_B, OP => ALU, Y => ALU_OUT, Y_extended => OPEN); 
 
   --EXEC PIPES
   --Note/TODO: it should be smart to attach alu B operand to memory data input so that we can store immediates

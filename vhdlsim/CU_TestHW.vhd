@@ -15,7 +15,7 @@ architecture TESTHW of cu_testhw is
     signal cu_opcode_i: std_logic_vector(OP_CODE_SIZE - 1 downto 0) := (others => '0');
     signal cu_func_i: std_logic_vector(FUNC_SIZE - 1 downto 0) := (others => '0');
     signal EN1_i, RF1_i, RF2_i, WF1_i, EN2_i, S1_i, S2_i, EN3_i, RM_i, WM_i, S3_i: std_logic := '0';
-    signal ALU: std_logic_vector(1 downto 0);
+    signal ALU: std_logic_vector(8 downto 0);
 
     constant n: integer := 1; --how many clock cycles between two consecutive instructions entering the CU?
 
