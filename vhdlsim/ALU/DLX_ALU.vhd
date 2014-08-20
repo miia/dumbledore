@@ -17,7 +17,7 @@ END DLX_ALU;
 
 -----------------------------------------------------------------------------------------------------------------------------------------------------
 --ALUOP INPUT:																	   --
---6 bits (5 downto 0);																   --
+--9 bits (8 downto 0);																   --
 --																		   --
 --bits 8 downto 6 = configure comparator (can't use bits 2 downto 0 for this, as it needs to be used at the same time as the arithmetic unit.)     --
 --bit  5 = drive a little mux21 to pre-select between logic unit output or LH output (before getting to the big 4-input mux)			   --
