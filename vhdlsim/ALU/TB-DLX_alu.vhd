@@ -16,8 +16,7 @@ ARCHITECTURE boh OF TB_DLX_ALU IS
   signal y2u: unsigned(REGISTER_SIZE*2-1 downto 0);
 
   signal Cout: std_logic_vector(1 downto 0);
-  signal OP: ALUOP := "00000";
-  signal FLAGS: ALU_FLAGS;                  
+  signal OP: ALUOP := "000000000";
 begin
 
   
@@ -36,7 +35,7 @@ rand_temp(REGISTER_SIZE-1 downto 1) := rand_temp(REGISTER_SIZE-2 downto 0);
 rand_temp(0) := temp;
    A <= rand_temp;
  
-    OP <= "00000";
+    OP <= "000000000";
     --ADD/ADDU
     wait for 10 ns;
     Ru := Au+Bu;
@@ -85,7 +84,7 @@ rand_temp(0) := temp;
    
    ---RESTART WITH IMMEDIATE BIT SET TO 1
    
-   OP <= "10000";    
+   OP <= "000010000";    
       --ADD/ADDU
       wait for 10 ns;
       Ru := Au+Bu;
@@ -126,13 +125,14 @@ rand_temp(0) := temp;
   
      --LHI
      OP <= std_logic_vector(unsigned(OP)+1);
+     OP(5) <= '1'; --this time we need to pre-select output of LH block (instead of Logic Unit).
      wait for 10 ns;
      ASSERT(Y=(B(15 downto 0) & "0000000000000000")) SEVERITY FAILURE;
       
   end process;
   
   testcomp: ENTITY work.DLX_ALU
-  PORT MAP(OP => OP, A => A, B => B, Y => Y, Y_extended => Y2, FLAGS => FLAGS);
+  PORT MAP(OP => OP, A => A, B => B, Y => Y, Y_extended => Y2 );
 
    Yu(REGISTER_SIZE-1 downto 0) <= unsigned(Y(REGISTER_SIZE-1 downto 0));
    Ys(REGISTER_SIZE-1 downto 0) <= signed(Y(REGISTER_SIZE-1 downto 0));
@@ -144,5 +144,4 @@ rand_temp(0) := temp;
    
    Bu(REGISTER_SIZE-1 downto 0) <= unsigned(B(REGISTER_SIZE-1 downto 0));
    Bs(REGISTER_SIZE-1 downto 0) <= signed(B(REGISTER_SIZE-1 downto 0));
-   Cout <= "0" & FLAGS(0);
 END ARCHITECTURE;
