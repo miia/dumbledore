@@ -19,7 +19,7 @@ ARCHITECTURE tb OF TB_FETCH_STAGE IS
     SIGNAL FLUSH_PIPELINE:  std_logic; -- As before, this is needed for the merge; could be smart
 
 --Get the current status of flags 
-    SIGNAL OLD_ALU_FLAGS:  ALU_FLAGS;
+    SIGNAL THE_REGISTER: REGISTER_CONTENT;
 
   -- What to replace the PC with  case of wrong prediction
     SIGNAL FALLBACK_ADDRESS:  CODE_ADDRESS;
@@ -35,17 +35,18 @@ BEGIN
   INST => INST,
   NOT_JMP_TAKEN => NOT_JMP_TAKEN,
   FLUSH_PIPELINE => FLUSH_PIPELINE,
-  OLD_ALU_FLAGS => OLD_ALU_FLAGS,
+  CHECK_REGISTER => THE_REGISTER,
   FALLBACK_ADDRESS => FALLBACK_ADDRESS,
   FETCHED_INST => FETCHED_INST
   );
 
   CLK <= not CLK after 10 ns;
   FALLBACK_ADDRESS <= (OTHERS => '1');
-  OLD_ALU_FLAGS <= "1"; -- Zero flag is active
-
+  
   INST(IR_SIZE-1 downto IR_SIZE-OP_CODE_SIZE) <= DRIVEN_INST;
   PROCESS BEGIN
+    THE_REGISTER <= (OTHERS => '0'); -- Zero flag is active
+      
     INST(IR_SIZE-OP_CODE_SIZE-1 downto 0) <= (4 => '1', OTHERS => '0'); -- Relative jmps are of +32
     --phase shift on the clock -- Memory gives data some time after the address (and thus the clock)
     wait for 15 ns;
@@ -77,7 +78,8 @@ BEGIN
     DRIVEN_INST <= CODE_ITYPE_ADD1; -- ADD R1, R1, 0;
     wait for 20 ns;
     DRIVEN_INST <= CODE_ITYPE_ADD1; -- ADD R1, R1, 0;
-    wait;
+    THE_REGISTER <= not THE_REGISTER;
+    wait for 20 ns;
 
   END PROCESS;
 END ARCHITECTURE;
