@@ -27,14 +27,12 @@ architecture BEHAVIORAL of COMPARATOR_GENERIC is
 signal msb : std_logic; 
 signal zero: std_logic;
 
-signal all_zeroes : std_logic_vector(N-1 downto 0); --this wouldn't be needed in a reasonable language.
+signal all_zeroes : std_logic_vector(N-1 downto 0);
 
 begin
 
    --hard-wire A STRING OF ZEROES to an actual signal, just so we can use it to perform a comparison later:
-   this_cant_be_happening: for i in 0 to N-1 generate --either i didn't understand VHDL's underlying pilosophy, or the language just sucks...
-      all_zeroes(i) <= '0';
-   end generate;
+   all_zeroes <= (others=>'0');
    
    
    msb  <= INPUT(N-1);
