@@ -30,8 +30,8 @@ entity DLX_CU is
     EN1      : out std_logic;  -- Register file / Immediate Register Enable --TODO: ONLY USED IF REGISTERS HAVE "EN" INPUT
 
     -- EX Control Signals
-    S1           : out std_logic;  -- MUX-A Sel (the one between Immediate operand and rightb_out (from the big mux of the B operand, see schematic))
-    S2           : out std_logic;  -- MUX-B Sel (TODO: THIS MIGHT BE UNUSED, now that there's a big mux for the A oerand as well)
+    S1           : out std_logic;  -- MUX-B Sel (the one between Immediate operand and rightB_out (from the big mux of the B operand, see schematic))
+    S2           : out std_logic;  -- MUX-A Sel (the one between current PC value and rightA_out (from the big mux of the A operand, see schematic))
     SELECT_REGA  : out std_logic_vector(1 downto 0); --2-bit signals driving the big 4-input multiplexers to implement forwarding
     SELECT_REGB  : out std_logic_vector(1 downto 0);
     ALU         : out ALUOP; -- ALU Operation Code (NOTE: ALUOP TYPE = 9 BITS)

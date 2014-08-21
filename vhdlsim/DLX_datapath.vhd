@@ -61,6 +61,9 @@ ARCHITECTURE dlx_simple OF DLX_DATAPATH IS
   signal input_for_right_a, input_for_right_b: mux_generic_input(3 downto 0, REGISTER_SIZE-1 downto 0);
   signal imm_extender_out: REGISTER_CONTENT;
   
+  signal pc_value : std_logic_vector(31 downto 0); -- carries current PC value out of fetch stage and into the ALU. (32 = width of Accumulator in fetch_stage)
+  
+  
 BEGIN
     
   --DECODE/DATAREAD STAGE
@@ -135,6 +138,9 @@ BEGIN
   select_immediate: ENTITY work.MUX21_GENERIC
   GENERIC MAP(WIDTH => REGISTER_SIZE) PORT MAP(A=>rightB_out, B=> imm_extender_out, S=>S1, Y => ALU_B);
 
+  select_PC: ENTITY work.MUX21_GENERIC
+  GENERIC MAP(WIDTH => REGISTER_SIZE) PORT MAP(A=>pc_value, B=> rightA_out, S=>S2, Y => ALU_A);
+
   --ALU OPCODES
   --5 bits
   --1st bit is Immediate/register switch (used to select NOT or LH - 1=LH, 0=NOT)
@@ -170,7 +176,7 @@ BEGIN
   --010=Arith shift right
   --and so on..
   myAlu: ENTITY work.DLX_ALU
-  PORT MAP(A => rightA_out, B=> ALU_B, OP => ALU, Y => ALU_OUT, Y_extended => OPEN); 
+  PORT MAP(A => ALU_A, B=> ALU_B, OP => ALU, Y => ALU_OUT, Y_extended => OPEN); 
 
   --EXEC PIPES
   --Note/TODO: it should be smart to attach alu B operand to memory data input so that we can store immediates
