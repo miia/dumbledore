@@ -29,7 +29,7 @@ ENTITY DLX_DATAPATH IS
  ALU         : in ALUOP; -- ALU Operation Code
  SIGN_EX     : in std_logic;  --signed/unsigned extension of immediate operand from IR
  EN2      : in std_logic;  -- ALU Output Register Enable
- RB_OUT: out REGISTER_CONTENT;
+ RA_OUT: out REGISTER_CONTENT;
  
  -- MEM/WB Control Signals
  RM            : in std_logic;  -- Data RAM Read Enable
@@ -131,7 +131,7 @@ BEGIN
   which_is_right_b: ENTITY work.MUX_GENERIC
   GENERIC MAP(WIDTH => REGISTER_SIZE, HEIGHT => 4) PORT MAP(A => input_for_right_b, S => SELECT_REGB, Y => rightB_out);
   -- This signal will be used by the fetch stage to check for branches
-  RB_OUT <= rightB_out;
+  RA_OUT <= rightA_out;
   ----------------------------------------------------------------------------------------------------------------------------
 
 

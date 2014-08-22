@@ -32,16 +32,13 @@ architecture A of register_file is
   subtype REG_ADDR is natural range 0 to NREGS-1; -- using natural type (from now on, REG_ADDR is equivalent to "(0 to 31)") -- register 0 is reserved
 	type REG_ARRAY is array(REG_ADDR) of std_logic_vector(REG_WIDTH-1 downto 0); -- we'll use REG_WIDTH=64
 --	signal REGISTERS : REG_ARRAY; 
-	shared variable REGISTERS : REG_ARRAY; --declared as VARIABLE instead of signal; in this way, if both a write and a read are performed on the same register at the same time, write can take precedence over read (in the same cycle, the stored value will be updated, and the output value will be the updated one) 
 
 begin 
  
-  send_data_to_port: if(SEND_REGISTER) generate
-    REG_FIXED_OUT <= REGISTERS(TO_SEND); -- Use a register as output port
-  end generate;
 
   
 process (CLK)
+	variable REGISTERS : REG_ARRAY; --declared as VARIABLE instead of signal; in this way, if both a write and a read are performed on the same register at the same time, write can take precedence over read (in the same cycle, the stored value will be updated, and the output value will be the updated one) 
 begin
   REGISTERS(0) := (OTHERS => '0');
 
@@ -69,6 +66,9 @@ begin
         end if;
     end if;
   end if;
+  --send_data_to_port: if(SEND_REGISTER) generate
+    REG_FIXED_OUT <= REGISTERS(TO_SEND); -- Use a register as output port
+  --end generate;
 end process;
 
 end A;

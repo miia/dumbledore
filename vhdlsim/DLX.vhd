@@ -18,7 +18,7 @@ ARCHITECTURE structural OF DLX IS
   signal ALU: ALUOP;
   signal EN2: std_logic;
   signal SIGN_EX: std_logic;
-  signal RB_OUT: REGISTER_CONTENT;
+  signal RA_OUT: REGISTER_CONTENT;
   signal RM, WM, SIGN, LH, LB, EN3: std_logic;
   signal MEMDATAIN, MEMDATAOUT, MEMADDRESS: REGISTER_CONTENT;
   signal S3, WF1: std_logic; 
@@ -36,19 +36,19 @@ BEGIN
   PORT MAP(
   CLK => CLK, RESET => RESET,
   RS1 => RS1, RS2 => RS2, RD => RD, IMM_16 => IMM_16, RF1 => RF1, RF2 => RF2, R30_OUT => POUT, EN1 => EN1, -- RF stage
-  S1 => S1, S2 => S2, SELECT_REGA => SELECT_REGA, SELECT_REGB => SELECT_REGB, ALU => ALU, EN2 => EN2, SIGN_EX => SIGN_EX, RB_OUT => RB_OUT, -- EX stage
+  S1 => S1, S2 => S2, SELECT_REGA => SELECT_REGA, SELECT_REGB => SELECT_REGB, ALU => ALU, EN2 => EN2, SIGN_EX => SIGN_EX, RA_OUT => RA_OUT, -- EX stage
   RM => RM, WM => WM, SIGN => SIGN, LH => LH, LB => LB, EN3 => EN3, MEMDATAIN => MEMDATAIN, MEMDATAOUT => MEMDATAOUT, MEMADDRESS => MEMADDRESS, S3 => S3, WF1 => WF1 -- MEM stage
   );
 
   the_fetch_stage: ENTITY work.FETCH_STAGE
-  PORT MAP(CLK, RESET, RDMEM, RDADDR, INST, FETCHED_INST, NOT_JMP_TAKEN, FLUSH_PIPELINE, RB_OUT, FALLBACK_ADDRESS);
+  PORT MAP(CLK, RESET, RDMEM, RDADDR, INST, FETCHED_INST, NOT_JMP_TAKEN, FLUSH_PIPELINE, RA_OUT, FALLBACK_ADDRESS);
   
   the_code_memory: ENTITY work.IRAM
   PORT MAP(Rst => RESET, Addr => RDADDR(5 downto 0), Dout => INST);
       
   IMM_16 <= INST(15 downto 0); --for I-type instructions, the Immediate value is stores in the 15 least significant bits of the IR
 
-  the_CU: ENTITY work.DLX_CU
+  the_CU: ENTITY work.DLX_CU(CU_HW)
   PORT MAP(
             CLK => CLK,
             RST => RESET,
