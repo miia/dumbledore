@@ -26,11 +26,12 @@ architecture IRam_Beh of IRAM is
 
   type RAMtype is array (0 to RAM_DEPTH - 1) of integer;-- std_logic_vector(I_SIZE - 1 downto 0);
 
+  constant addr_top : integer := ceil_log2(RAM_DEPTH)-1;
   signal IRAM_mem : RAMtype;
 
 begin  -- IRam_Bhe
 
-  Dout <= conv_std_logic_vector(IRAM_mem(conv_integer(unsigned(Addr))),I_SIZE);
+  Dout <= conv_std_logic_vector(IRAM_mem(conv_integer(unsigned(Addr(addr_top downto 2)))),I_SIZE) after 1 ns;
 
   -- Process body executes every time reset goes low (resets are active-low here)
   -- it reads from a file containing machine code ("test.asm.mem") and fills IRAM_mem with instructions.
