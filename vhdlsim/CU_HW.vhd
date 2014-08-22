@@ -62,9 +62,9 @@ architecture CU_HW of DLX_CU is
   signal IR_func : std_logic_vector(FUNC_SIZE-1 downto 0);   -- Func part of IR when Rtype
 
   signal cw   : std_logic_vector(CW_SIZE-1 downto 0); -- all the control signals output by the CU to the pipeline stages of the datapath.
-
+                                                      -- these are all the 20 control signals; a part (CW_IF_SIZE) will go to stage zero (IF), the rest (17) will go to the next pipeline register
   -- control word is shifted to the correct stage
-  signal cw0 : std_logic_vector(CW_SIZE-1 downto 0);         -- all 20 control signals; a part (CW_IF_SIZE) will go to stage zero (IF), the rest (17) will go to the next pipeline register
+  --signal cw0 : std_logic_vector(CW_SIZE-1 downto 0);         -- all 20 control signals; a part (CW_IF_SIZE) will go to stage zero (IF), the rest (17) will go to the next pipeline register
   signal cw1 : std_logic_vector(CW_SIZE-1-CW_IF_SIZE downto 0);       -- 17 control signals; a part (CW_ID_SIZE) will go to stage one (ID), the rest (14) will go to the next pipeline register
   signal cw2 : std_logic_vector(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE downto 0);     -- 14 control signals; a part (CW_EX_SIZE) will go to stage two (EX), the rest (9) will go to the next pipeline register
   signal cw3 : std_logic_vector(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE downto 0);   -- 9 control signals; a part (CW_MEM_SIZE) will go to stage three (MEM), the rest (2) will go to the next pipeline register
@@ -92,9 +92,9 @@ begin  -- dlx_cu_hw architecture
   --Statically connecting signals from output of pipeline registers to the entity output ports (going to the datapath):
 
   -- control signals for stage 0 (IF)
-  PC_EN        <= cw0(CW_SIZE-1 - 0);
-  IR_LATCH_EN  <= cw0(CW_SIZE-1 - 1);
-  NPC_LATCH_EN <= cw0(CW_SIZE-1 - 2);
+  PC_EN        <= cw(CW_SIZE-1 - 0);
+  IR_LATCH_EN  <= cw(CW_SIZE-1 - 1);
+  NPC_LATCH_EN <= cw(CW_SIZE-1 - 2);
 
   -- control signals for stage 1 (ID)
   RF1 <= cw1(CW_SIZE-1-CW_IF_SIZE - 0);
@@ -134,7 +134,7 @@ begin  -- dlx_cu_hw architecture
   begin  -- process Clk
 
     if Rst = '0' then              -- asynchronous reset (active low)
-        cw0 <= (others => '0');
+        cw <= (others => '0');
         cw1 <= (others => '0');
         cw2 <= (others => '0');
         cw3 <= (others => '0');
@@ -145,8 +145,8 @@ begin  -- dlx_cu_hw architecture
         --aluOpcode3 <= NOP;
     elsif Clk'event and Clk = '1' then  -- rising clock edge
 
-         cw0 <= cw;
-         cw1 <= cw0(CW_SIZE-1-CW_IF_SIZE downto 0);
+         --cw0 <= cw;
+         cw1 <= cw(CW_SIZE-1-CW_IF_SIZE downto 0);
          cw2 <= cw1(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE downto 0);
          cw3 <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE downto 0);
          cw4 <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE downto 0);
