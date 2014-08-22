@@ -137,6 +137,17 @@ begin
    OP(2 downto 0) <= "000";
    wait for 10 ns;
    ASSERT(Ys=(As ror to_integer(unsigned(B(4 downto 0))))) REPORT msgV(A, B, Y, "ror") SEVERITY FAILURE;
+
+   --IMMEDIATE operations
+   OP(5)<='1';
+   OP(4 downto 3) <= "01";
+ 
+   --NOT -- will be changed to LH
+   OP(2 downto 0) <= "011";
+   wait for 10 ns;
+   ASSERT(Y=B & "0000000000000000") REPORT msgV(A,B,Y,"lh") SEVERITY FAILURE;
+
+
   end process;
   
   testcomp: ENTITY work.DLX_ALU
