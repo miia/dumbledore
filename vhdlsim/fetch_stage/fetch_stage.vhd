@@ -36,7 +36,7 @@ ARCHITECTURE STRUCTURAL OF FETCH_STAGE IS
   signal bubble, nbubble, clk_bubblegated: std_logic;
   signal old_ir, real_ir: INSTRUCTION;
   signal old_ir_is_a_load, olddest_newsource, olddest_newsource2, bubbleforsource2, source2exists: std_logic; -- Results of comparisons of pieces of new and old IR
-  signal immediate_extended: CODE_ADDRESS;
+  signal immediate_extended: std_logic_vector(33 downto 0);
   --Get the current status of result 
   signal reg_is_zero: std_logic;
   signal allatzero: REGISTER_CONTENT;
@@ -49,7 +49,7 @@ BEGIN
   extend_immediate: for i in 16 to 25 generate
    immediate_extended(i) <= INST(i) WHEN INST(2)='0' ELSE imm16of(INST)(15);
   end generate;
-  extend_immediate_2ndpart_killme: for i in 26 to CODE_ADDRESS_SIZE-1 generate
+  extend_immediate_2ndpart_killme: for i in 26 to CODE_ADDRESS_SIZE+1 generate -- Extends up to 2 bit more than the size of immediate, as it will be always a multiple of 4: the last 2 bits of immediate will be truncated entering the accumulator
    immediate_extended(i) <= immediate_extended(25);
   end generate;
   
@@ -59,7 +59,7 @@ BEGIN
       WIDTH => 32
   )
   PORT MAP(
-    IMMEDIATE => immediate_extended,
+    IMMEDIATE => immediate_extended(CODE_ADDRESS_SIZE+1 downto 2),
     NEW_VALUE =>	FALLBACK_ADDRESS,
 		CLK => clk,
 		RESET => RESET,
