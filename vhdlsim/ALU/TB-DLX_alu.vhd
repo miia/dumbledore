@@ -74,6 +74,7 @@ begin
     Rsl:=(As*Bs);
     ASSERT (Y2s)= Rsl REPORT msgS(A,B,Y2 & Y,"*") SEVERITY FAILURE;
 
+   OP(5) <= '0';
    OP(4 downto 3) <= "01"; -- Logic unit
    --OR
    OP(2 downto 0) <= "000";
@@ -145,7 +146,7 @@ begin
    --NOT -- will be changed to LH
    OP(2 downto 0) <= "011";
    wait for 10 ns;
-   ASSERT(Y=B & "0000000000000000") REPORT msgV(A,B,Y,"lh") SEVERITY FAILURE;
+   ASSERT(Y=B(15 downto 0) & "0000000000000000") REPORT msgV(A,B,Y,"lh") SEVERITY FAILURE;
 
 
   end process;
