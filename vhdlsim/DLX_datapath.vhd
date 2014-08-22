@@ -13,11 +13,13 @@ ENTITY DLX_DATAPATH IS
  RS1      : in REG_ADDRESS; --Source registers
  RS2      : in REG_ADDRESS;
  RD       : in REG_ADDRESS; -- Destination registers
+ IMM_16   : in std_logic_vector(15 downto 0);  --16-bit immediate value from IR - needs to be extended to 32 bits
  
  RF1      : in std_logic;  -- Register A Latch Enable
  RF2      : in std_logic;  -- Register B Latch Enable
  R30_OUT  : out REGISTER_CONTENT; -- Output from register R30
  EN1      : in std_logic;  -- Register file / Immediate Register Enable
+
 
  -- EX Control Signals
  S1           : in std_logic;  -- MUX-A Sel
@@ -25,6 +27,7 @@ ENTITY DLX_DATAPATH IS
  SELECT_REGA : in std_logic_vector(1 downto 0);
  SELECT_REGB : in std_logic_vector(1 downto 0);
  ALU         : in ALUOP; -- ALU Operation Code
+ SIGN_EX     : in std_logic;  --signed/unsigned extension of immediate operand from IR
  EN2      : in std_logic;  -- ALU Output Register Enable
  RB_OUT: out REGISTER_CONTENT;
  
@@ -50,11 +53,16 @@ ARCHITECTURE dlx_simple OF DLX_DATAPATH IS
 
   signal pipe1a_in, pipe1a_out: REGISTER_CONTENT;
   signal pipe1b_in, pipe1b_out: REGISTER_CONTENT;
-  signal pipe1in1_in, pipe1in1_out, pipe1in2_in, pipe1in2_out, memory_out, pipe3out_out: REGISTER_CONTENT;-- We put immediate in the B side of the ALU so that we can make SUBI
+  signal pipe1in2_in, pipe1in2_out : std_logic_vector(REGISTER_SIZE/2-1 downto 0); -- this register holds the Immediate value coming fromthe IR, BEFORE its extension to 32 bits (which takes place in the EX stage).
+  signal pipe1in1_in, pipe1in1_out, memory_out, pipe3out_out: REGISTER_CONTENT;-- We put immediate in the B side of the ALU so that we can make SUBI
   signal pipe1rd1_out, pipe2rd2_out: REG_ADDRESS;
   signal ALU_A, ALU_B, ALU_OUT, pipe2aluout_out, pipe2me_out, writeback_data: REGISTER_CONTENT;-- Data input for ALU
   signal regO_out, regBa_out, rightA_out, rightB_out: REGISTER_CONTENT;-- Data input for ALU
   signal input_for_right_a, input_for_right_b: mux_generic_input(3 downto 0, REGISTER_SIZE-1 downto 0);
+  signal imm_extender_out: REGISTER_CONTENT;
+  
+  signal pc_value : std_logic_vector(31 downto 0); -- carries current PC value out of fetch stage and into the ALU. (32 = width of Accumulator in fetch_stage)
+  
   
 BEGIN
     
@@ -87,7 +95,7 @@ BEGIN
   GENERIC MAP(WIDTH => REGISTER_SIZE) PORT MAP(D => pipe1in1_in, CK => CLK, RESET => RESET, Q => pipe1in1_out);
 
   pipe1in2: ENTITY work.REG_GENERIC
-  GENERIC MAP(WIDTH => REGISTER_SIZE) PORT MAP(D => pipe1in2_in, CK => CLK, RESET => RESET, Q => pipe1in2_out);
+  GENERIC MAP(WIDTH => REGISTER_SIZE/2) PORT MAP(D => IMM_16, CK => CLK, RESET => RESET, Q => pipe1in2_out); --NOTE: this register holds the Immediate value coming from the IR, BEFORE its extension to 32 bits. extension is done in the EX stage, just before operations involving the value.
 
   pipe1rd1: ENTITY work.REG_GENERIC GENERIC MAP(WIDTH => REG_ADDRESS_SIZE) PORT MAP(D => RD, CK => CLK, RESET => RESET, Q => pipe1rd1_out);
 
@@ -95,6 +103,11 @@ BEGIN
   --EXECUTE STAGE
 
   ----------------------------------------------------------------------------------------------------------------------------
+
+  --extend Immediate value to 32 bits before feeding it into the ALU (through a mux)
+  immediate_extender: ENTITY work.IMM_EXTENDER
+  PORT MAP(INPUT => pipe1in2_out, SIGN => SIGN_EX, OUTPUT => imm_extender_out); --NOTE: signed/unsigned extension driven by the SAME bit driving signed/unsigned operations in the ALU
+
   --Select the right value for read registers and overwrite register which still have not been writeback'd (data forwarding)
 
   --This should be a std_logic_vector assignment, no comment
@@ -123,7 +136,10 @@ BEGIN
 
 
   select_immediate: ENTITY work.MUX21_GENERIC
-  GENERIC MAP(WIDTH => REGISTER_SIZE) PORT MAP(A=>rightB_out, B=> pipe1in2_out, S=>S1, Y => ALU_B);
+  GENERIC MAP(WIDTH => REGISTER_SIZE) PORT MAP(A=>rightB_out, B=> imm_extender_out, S=>S1, Y => ALU_B);
+
+  select_PC: ENTITY work.MUX21_GENERIC
+  GENERIC MAP(WIDTH => REGISTER_SIZE) PORT MAP(A=>pc_value, B=> rightA_out, S=>S2, Y => ALU_A);
 
   --ALU OPCODES
   --5 bits
@@ -160,7 +176,7 @@ BEGIN
   --010=Arith shift right
   --and so on..
   myAlu: ENTITY work.DLX_ALU
-  PORT MAP(A => rightA_out, B=> ALU_B, OP => ALU, Y => ALU_OUT, Y_extended => OPEN); 
+  PORT MAP(A => ALU_A, B=> ALU_B, OP => ALU, Y => ALU_OUT, Y_extended => OPEN); 
 
   --EXEC PIPES
   --Note/TODO: it should be smart to attach alu B operand to memory data input so that we can store immediates

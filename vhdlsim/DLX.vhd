@@ -12,10 +12,12 @@ END DLX;
 ARCHITECTURE structural OF DLX IS
   --SIGNALS OF THE DATAPATH
   signal RS1, RS2, RD: REG_ADDRESS;
+  signal IMM_16: std_logic_vector(15 downto 0);
   signal RF1, RF2, EN1, S1, S2: std_logic;
   signal SELECT_REGA, SELECT_REGB: std_logic_vector(1 downto 0);
   signal ALU: ALUOP;
   signal EN2: std_logic;
+  signal SIGN_EX: std_logic;
   signal RB_OUT: REGISTER_CONTENT;
   signal RM, WM, SIGN, LH, LB, EN3: std_logic;
   signal MEMDATAIN, MEMDATAOUT, MEMADDRESS: REGISTER_CONTENT;
@@ -30,11 +32,11 @@ ARCHITECTURE structural OF DLX IS
   signal FALLBACK_ADDRESS: CODE_ADDRESS;
 
 BEGIN
-  the_datapath: ENTITY work.DLX_DATAPATH 
+  the_datapath: ENTITY work.DLX_DATAPATH     --TODO: right now signals IMM_16 and SIGN_EX enter the datapath, but they
   PORT MAP(
   CLK => CLK, RESET => RESET,
-  RS1 => RS1, RS2 => RS2, RD => RD, RF1 => RF1, RF2 => RF2, R30_OUT => POUT, EN1 => EN1, -- RF stage
-  S1 => S1, S2 => S2, SELECT_REGA => SELECT_REGA, SELECT_REGB => SELECT_REGB, ALU => ALU, EN2 => EN2, RB_OUT => RB_OUT, -- EX stage
+  RS1 => RS1, RS2 => RS2, RD => RD, IMM_16 => IMM_16, RF1 => RF1, RF2 => RF2, R30_OUT => POUT, EN1 => EN1, -- RF stage
+  S1 => S1, S2 => S2, SELECT_REGA => SELECT_REGA, SELECT_REGB => SELECT_REGB, ALU => ALU, EN2 => EN2, SIGN_EX => SIGN_EX, RB_OUT => RB_OUT, -- EX stage
   RM => RM, WM => WM, SIGN => SIGN, LH => LH, LB => LB, EN3 => EN3, MEMDATAIN => MEMDATAIN, MEMDATAOUT => MEMDATAOUT, MEMADDRESS => MEMADDRESS, S3 => S3, WF1 => WF1 -- MEM stage
   );
 
@@ -43,6 +45,8 @@ BEGIN
   
   the_code_memory: ENTITY work.IRAM
   PORT MAP(Rst => RESET, Addr => RDADDR(5 downto 0), Dout => INST);
+      
+  IMM_16 <= INST(15 downto 0); --for I-type instructions, the Immediate value is stores in the 15 least significant bits of the IR
 
   the_CU: ENTITY work.DLX_CU
   PORT MAP(
@@ -59,6 +63,7 @@ BEGIN
             S1 => S1,
             S2 => S2,
             ALU => ALU,
+            SIGN_EX => SIGN_EX,
             EN2 => EN2,
             RM => RM,
             WM => WM,
