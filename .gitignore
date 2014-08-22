@@ -9,3 +9,7 @@ tcl_stacktrace.txt
 assembler.bin/
 assembler.sh
 *.hdr
+*.asm.mem
+*.list
+*\_dump.txt
+*.bin
