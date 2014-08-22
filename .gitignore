@@ -6,3 +6,5 @@ vhdlsim/transcript
 vsim.wlf
 vhdlsim/quartus/
 tcl_stacktrace.txt
+assembler.bin/
+assembler.sh
