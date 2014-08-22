@@ -14,6 +14,7 @@ ENTITY DLX_DATAPATH IS
  RS2      : in REG_ADDRESS;
  RD       : in REG_ADDRESS; -- Destination registers
  IMM_16   : in std_logic_vector(15 downto 0);  --16-bit immediate value from IR - needs to be extended to 32 bits
+ PC       : in std_logic_vector(31 downto 0); -- This will be the other immediate value - INP1
  
  RF1      : in std_logic;  -- Register A Latch Enable
  RF2      : in std_logic;  -- Register B Latch Enable
@@ -91,6 +92,7 @@ BEGIN
   pipe1b: ENTITY work.REG_GENERIC
   GENERIC MAP(WIDTH => REGISTER_SIZE) PORT MAP (D => pipe1b_in, CK => CLK, RESET => RESET, Q => pipe1b_out);
 
+  pipe1in1_in <= PC;
   pipe1in1: ENTITY work.REG_GENERIC
   GENERIC MAP(WIDTH => REGISTER_SIZE) PORT MAP(D => pipe1in1_in, CK => CLK, RESET => RESET, Q => pipe1in1_out);
 
@@ -136,10 +138,10 @@ BEGIN
 
 
   select_immediate: ENTITY work.MUX21_GENERIC
-  GENERIC MAP(WIDTH => REGISTER_SIZE) PORT MAP(A=>rightB_out, B=> imm_extender_out, S=>S1, Y => ALU_B);
+  GENERIC MAP(WIDTH => REGISTER_SIZE) PORT MAP(B=>rightB_out, A=> imm_extender_out, S=>S2, Y => ALU_B);
 
   select_PC: ENTITY work.MUX21_GENERIC
-  GENERIC MAP(WIDTH => REGISTER_SIZE) PORT MAP(A=>pc_value, B=> rightA_out, S=>S2, Y => ALU_A);
+  GENERIC MAP(WIDTH => REGISTER_SIZE) PORT MAP(A=>pipe1in1_out, B=> rightA_out, S=>S1, Y => ALU_A);
 
   --ALU OPCODES
   --5 bits
