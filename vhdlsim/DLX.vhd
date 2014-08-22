@@ -29,8 +29,8 @@ ARCHITECTURE structural OF DLX IS
   signal RDMEM: std_logic;
   signal RDADDR: std_logic_vector(33 downto 0);
   signal INST: INSTRUCTION;
-  signal FETCHED_INST: INSTRUCTION;
-  signal NOT_JMP_TAKEN, FLUSH_PIPELINE: std_logic;
+  signal FETCHED_INST_NCLK, FETCHED_INST: INSTRUCTION;
+  signal NOT_JMP_TAKEN_NCLK, NOT_JMP_TAKEN, FLUSH_PIPELINE: std_logic;
   signal FALLBACK_ADDRESS: CODE_ADDRESS;
 
 BEGIN
@@ -52,12 +52,17 @@ BEGIN
   GENERIC MAP(WIDTH => REG_ADDRESS_SIZE) PORT MAP (A => FETCHED_INST(15 downto 11), B => FETCHED_INST(20 downto 16), S => IS_REGOP, Y => RD);
 
   the_fetch_stage: ENTITY work.FETCH_STAGE
-  PORT MAP(CLK, RESET, RDMEM, RDADDR, INST, FETCHED_INST, NOT_JMP_TAKEN, FLUSH_PIPELINE, RA_OUT, FALLBACK_ADDRESS);
+  PORT MAP(CLK, RESET, RDMEM, RDADDR, INST, FETCHED_INST_NCLK, NOT_JMP_TAKEN_NCLK, FLUSH_PIPELINE, RA_OUT, FALLBACK_ADDRESS);
+  --Put a clock behind the instruction register in order to separate fetch stage and control unit
+  clk_instruction: ENTITY work.REG_GENERIC
+  GENERIC MAP(WIDTH => 32) PORT MAP(CK => CLK, RESET => RESET, D => FETCHED_INST_NCLK, Q => FETCHED_INST);
+
+  clk_jmptaken: ENTITY work.REG_GENERIC
+  GENERIC MAP(WIDTH => 1) PORT MAP(CK => CLK, RESET => RESET, D(0) => NOT_JMP_TAKEN_NCLK, Q(0) => NOT_JMP_TAKEN);
   
   the_code_memory: ENTITY work.IRAM
   PORT MAP(Rst => RESET, Addr => RDADDR(5 downto 0), Dout => INST);
       
-  IMM_16 <= INST(15 downto 0); --for I-type instructions, the Immediate value is stores in the 15 least significant bits of the IR
 
   the_CU: ENTITY work.DLX_CU(CU_HW)
   PORT MAP(
