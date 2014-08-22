@@ -10,6 +10,6 @@ ARCHITECTURE TEST OF TB_DLX IS
 BEGIN
   -- Fetch unit will automatically fetch instruction and execute them, all we have to do is let it go :)
   toTest: ENTITY work.DLX PORT MAP(CLK, RESET, POUT);
-  RESET <= '0', '1' after 30 ns;
+  RESET <= '0', '1' after 15 ns;
   CLK <=  not CLK after 10 ns;
 END ARCHITECTURE;
