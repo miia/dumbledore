@@ -30,8 +30,8 @@ entity DLX_CU is
     EN1      : out std_logic;  -- Register file / Immediate Register Enable --TODO: ONLY USED IF REGISTERS HAVE "EN" INPUT
 
     -- EX Control Signals
-    S1           : out std_logic;  -- MUX-B Sel (the one between Immediate operand and rightB_out (from the big mux of the B operand, see schematic))
-    S2           : out std_logic;  -- MUX-A Sel (the one between current PC value and rightA_out (from the big mux of the A operand, see schematic))
+    S1           : out std_logic;  -- MUX-A Sel (the one between current PC value and rightA_out (from the big mux of the A operand, see schematic))
+    S2           : out std_logic;  -- MUX-B Sel (the one between Immediate operand and rightB_out (from the big mux of the B operand, see schematic))
     SELECT_REGA  : out std_logic_vector(1 downto 0); --2-bit signals driving the big 4-input multiplexers to implement forwarding
     SELECT_REGB  : out std_logic_vector(1 downto 0);
     ALU         : out ALUOP; -- ALU Operation Code (NOTE: ALUOP TYPE = 9 BITS)
@@ -178,8 +178,8 @@ begin  -- dlx_cu_hw architecture
    --cw(CW_SIZE-1-CW_IF_SIZE - 2) corresponds to EN1; (1 = enable RF and interface registers of stage1)
 
    -- control signals for stage 2 (EX)
-   --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 0) corresponds to S1; (0 = pass output from RF out of multiplexer S1)
-   --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 1) corresponds to S2; (0 = pass output from RF out of multiplexer S2)
+   --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 0) corresponds to S1; (0 = pass output from RF out of multiplexer S1; 1 = pass value of PC)
+   --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 1) corresponds to S2; (0 = pass output from RF out of multiplexer S2; 1 = pass value of Immediate coming from IR)
    --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 2 downto CW_SIZE-1 - 3) correspond to SELECT_REGA;  ("00"=> all zeroes; "01"=> output A from RF; "10" => Output register (1st forwarding register); "11" => Backup register (2nd forwarding register).)
    --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 4 downto CW_SIZE-1 - 5) correspond to SELECT_REGB;  ("00"=> all zeroes; "01"=> output B from RF; "10" => Output register (1st forwarding register); "11" => Backup register (2nd forwarding register).)
    --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 6 downto CW_SIZE-1 - 14) are the 9 control bits for the ALU;
@@ -218,7 +218,7 @@ begin  -- dlx_cu_hw architecture
 
         cw(CW_SIZE-1-CW_IF_SIZE downto CW_SIZE-1-CW_IF_SIZE-2) <= "111"; --enable RF and corresponding output registers in the ID stage
 
-        cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-5) <= "11"&"01"&"01"; --enable and pass regA and regB to ALU through muxes (by default, keep forwarding disabled; will possibly be enabled later)
+        cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-5) <= "00"&"01"&"01"; --enable and pass regA and regB to ALU through muxes (by default, keep forwarding disabled; will possibly be enabled later)
         --(leave ALU and SIGN_EX signals to be set later;)
         cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-16) <= '1';                                                   --enable ALU output register
 
