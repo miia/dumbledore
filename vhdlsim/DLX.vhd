@@ -1,6 +1,7 @@
 LIBRARY IEEE;
 USE IEEE.std_logic_1164.ALL;
 USE work.myTypes.ALL;
+USE work.opcodes.ALL;
 ENTITY DLX IS
   PORT(
   CLK: in std_logic;
@@ -11,7 +12,8 @@ END DLX;
 
 ARCHITECTURE structural OF DLX IS
   --SIGNALS OF THE DATAPATH
-  signal RS1, RS2, RD: REG_ADDRESS;
+  signal RS1, RS2, RD, RDIMM, RDREG: REG_ADDRESS;
+  signal IS_REGOP: std_logic; -- This signal decides which is the location of RD into the instruction register
   signal IMM_16: std_logic_vector(15 downto 0);
   signal RF1, RF2, EN1, S1, S2: std_logic;
   signal SELECT_REGA, SELECT_REGB: std_logic_vector(1 downto 0);
@@ -39,6 +41,15 @@ BEGIN
   S1 => S1, S2 => S2, SELECT_REGA => SELECT_REGA, SELECT_REGB => SELECT_REGB, ALU => ALU, EN2 => EN2, SIGN_EX => SIGN_EX, RA_OUT => RA_OUT, -- EX stage
   RM => RM, WM => WM, SIGN => SIGN, LH => LH, LB => LB, EN3 => EN3, MEMDATAIN => MEMDATAIN, MEMDATAOUT => MEMDATAOUT, MEMADDRESS => MEMADDRESS, S3 => S3, WF1 => WF1 -- MEM stage
   );
+
+  RS1 <= FETCHED_INST(25 downto 21);
+  RS2 <= FETCHED_INST(20 downto 16);
+  IMM_16 <= FETCHED_INST(15 downto 0);
+
+  --Destination register has two different positions depending on wether the instruction is I-TYPE (20 downto 16) or R-TYPE (15 downto 11)
+  IS_REGOP <= '1' when (FETCHED_INST(31 downto 26)=OPCODE_RTYPE) else '0';
+  decide_position_of_rd: ENTITY work.MUX21_GENERIC
+  GENERIC MAP(WIDTH => REG_ADDRESS_SIZE) PORT MAP (A => FETCHED_INST(15 downto 11), B => FETCHED_INST(20 downto 16), S => IS_REGOP, Y => RD);
 
   the_fetch_stage: ENTITY work.FETCH_STAGE
   PORT MAP(CLK, RESET, RDMEM, RDADDR, INST, FETCHED_INST, NOT_JMP_TAKEN, FLUSH_PIPELINE, RA_OUT, FALLBACK_ADDRESS);
