@@ -14,6 +14,6 @@ BEGIN
 
   CLK <= not CLK after 10 ns;
 
-  RESET <= '0', '1' after 30 ns;
+  RESET <= '0', '1' after 15 ns;
 
 END ARCHITECTURE;
