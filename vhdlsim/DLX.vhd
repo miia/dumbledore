@@ -52,15 +52,15 @@ BEGIN
 
   --Puts another delay in order to align register address to CU work ( NCLK is entering the CU, while it will enter the RF on the next clock cycle)
   clk_rs1: ENTITY work.DELAY_BLOCK
-    GENERIC MAP(WIDTH => 5, NREGS => 2) PORT MAP(CLK => CLK, RESET => RESET, D => RS1_NCLK, Q => RS1);
+    GENERIC MAP(WIDTH => 5, NREGS => 1) PORT MAP(CLK => CLK, RESET => RESET, D => RS1_NCLK, Q => RS1);
   clk_rs2: ENTITY work.DELAY_BLOCK
-    GENERIC MAP(WIDTH => 5, NREGS => 2) PORT MAP(CLK => CLK, RESET => RESET, D => RS2_NCLK, Q => RS2);
+    GENERIC MAP(WIDTH => 5, NREGS => 1) PORT MAP(CLK => CLK, RESET => RESET, D => RS2_NCLK, Q => RS2);
   clk_imm16: ENTITY work.DELAY_BLOCK
-    GENERIC MAP(WIDTH => 16, NREGS => 2) PORT MAP(CLK => CLK, RESET => RESET, D => IMM_16_NCLK, Q => IMM_16);
+    GENERIC MAP(WIDTH => 16, NREGS => 1) PORT MAP(CLK => CLK, RESET => RESET, D => IMM_16_NCLK, Q => IMM_16);
   clk_rd: ENTITY work.DELAY_BLOCK
-    GENERIC MAP(WIDTH => 5, NREGS => 2) PORT MAP(CLK => CLK, RESET => RESET, D => RD_NCLK, Q => RD);
+    GENERIC MAP(WIDTH => 5, NREGS => 1) PORT MAP(CLK => CLK, RESET => RESET, D => RD_NCLK, Q => RD);
   clk_pc: ENTITY work.DELAY_BLOCK
-  GENERIC MAP(WIDTH => 32, NREGS => 2) PORT MAP(CLK => CLK, RESET => RESET, D => RDADDR(33 downto 2), Q => CURRENT_PC);
+  GENERIC MAP(WIDTH => 32, NREGS => 1) PORT MAP(CLK => CLK, RESET => RESET, D => RDADDR(33 downto 2), Q => CURRENT_PC);
 
 
   the_fetch_stage: ENTITY work.FETCH_STAGE
