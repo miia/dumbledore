@@ -31,7 +31,7 @@ architecture A of register_file is
         -- suggested structures
   subtype REG_ADDR is natural range 0 to NREGS-1; -- using natural type (from now on, REG_ADDR is equivalent to "(0 to 31)") -- register 0 is reserved
 	type REG_ARRAY is array(REG_ADDR) of std_logic_vector(REG_WIDTH-1 downto 0); -- we'll use REG_WIDTH=64
---	signal REGISTERS : REG_ARRAY; 
+  signal theregs: REG_ARRAY; -- Debug purpose
 
 begin 
  
@@ -48,13 +48,14 @@ begin
     OUT1 <= (others=>'0'); --first of all, assign all 0's to outputs at each new clock cycle (default output behavior)
     OUT2 <= (others=>'0');
     
-    if (RESET='1') then
+    if (RESET='0') then
         REGISTERS(REG_ADDR) := (others=>(others=>'0')); --reset content of ALL registers
         --OUT1 <= (others=>'0'); --reset outputs as well
         --OUT2 <= (others=>'0');
     else
         if (ENABLE='1') then
             if (WR='1' and (to_integer(unsigned(ADD_WR)) > 0)) then --WRITE HAS PRIORITY over read operations.
+              ASSERT FALSE REPORT "Sto scrivendo qualcosa" severity WARNING;
                 REGISTERS(to_integer(unsigned(ADD_WR))):=DATAIN;  --write has been requested, enable is high, reset is not active.
             end if;
             if (RD1='1') then
@@ -68,6 +69,7 @@ begin
   end if;
   --send_data_to_port: if(SEND_REGISTER) generate
     REG_FIXED_OUT <= REGISTERS(TO_SEND); -- Use a register as output port
+    theregs <= REGISTERS;
   --end generate;
 end process;
 
