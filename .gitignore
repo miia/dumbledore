@@ -13,3 +13,4 @@ assembler.sh
 *.list
 *\_dump.txt
 *.bin
+*.swp
