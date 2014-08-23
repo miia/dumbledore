@@ -29,7 +29,7 @@ ARCHITECTURE structural OF DLX IS
   signal RDMEM: std_logic;
   signal RDADDR: std_logic_vector(33 downto 0);
   signal INST: INSTRUCTION;
-  signal FETCHED_INST_NCLK, FETCHED_INST: INSTRUCTION;
+  signal FETCHED_INST_NCLK, FETCHED_INST, IR_FOR_FORWARDING: INSTRUCTION;
   signal NOT_JMP_TAKEN_NCLK, NOT_JMP_TAKEN, FLUSH_PIPELINE: std_logic;
   signal FALLBACK_ADDRESS, CURRENT_PC: CODE_ADDRESS;
 
@@ -90,8 +90,8 @@ BEGIN
             EN1 => EN1,
             S1 => S1,
             S2 => S2,
-            SELECT_REGA => SELECT_REGA,
-            SELECT_REGB => SELECT_REGB,
+            SELECT_REGA => open,
+            SELECT_REGB => open,
             ALU => ALU,
             SIGN_EX => SIGN_EX,
             EN2 => EN2,
@@ -105,7 +105,11 @@ BEGIN
             S3 => S3,
             WF1 => WF1
           );
-
+  --Forwarding unit: IR must be aligned to the instruction *entering* the ALU, so it must be delayed of 2 clock cycles w.r.t. the CU instruction
+  delay_to_forwarding: ENTITY work.DELAY_BLOCK
+  GENERIC MAP(WIDTH => IR_SIZE, NREGS => 2) PORT MAP(CLK => CLK, RESET => RESET, D => FETCHED_INST, Q => IR_FOR_FORWARDING);
+  forward_blocK: ENTITY work.FORWARDER
+  PORT MAP(CLK => CLK, RESET => RESET, IR => IR_FOR_FORWARDING, SELECT_RIGHTA => SELECT_REGA, SELECT_RIGHTB => SELECT_REGB);
 END ARCHITECTURE;
 
 
