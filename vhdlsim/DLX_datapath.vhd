@@ -195,7 +195,7 @@ BEGIN
   GENERIC MAP(WIDTH => REGISTER_SIZE) PORT MAP(D => writeback_data, CK => CLK, RESET => RESET, Q => regBa_out);
 
   pipe2me: ENTITY work.REG_GENERIC
-  GENERIC MAP(WIDTH => REGISTER_SIZE) PORT MAP(D => pipe1b_out, CK => CLK, RESET => RESET, Q => pipe2me_out);
+  GENERIC MAP(WIDTH => REGISTER_SIZE) PORT MAP(D => rightB_out, CK => CLK, RESET => RESET, Q => pipe2me_out);
 
   pipe2rd2: ENTITY work.REG_GENERIC
   GENERIC MAP(WIDTH => REG_ADDRESS_SIZE) PORT MAP(D => pipe1rd1_out, CK => CLK, RESET => RESET, Q => pipe2rd2_out);
