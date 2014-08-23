@@ -12,8 +12,8 @@ END DLX;
 
 ARCHITECTURE structural OF DLX IS
   --SIGNALS OF THE DATAPATH
-  signal RS1, RS2, RD, RS1_NCLK, RS2_NCLK, RD_NCLK, RDIMM, RDREG: REG_ADDRESS;
-  signal IS_REGOP: std_logic; -- This signal decides which is the location of RD into the instruction register
+  signal RS1, RS2, RD, RS1_NCLK, RS2_NCLK, RD_FROM_IR, RD_NCLK, RDIMM, RDREG: REG_ADDRESS;
+  signal IS_REGOP, IS_JAL: std_logic; -- This signal decides which is the location of RD into the instruction register
   signal IMM_16, IMM_16_NCLK: std_logic_vector(15 downto 0);
   signal RF1, RF2, EN1, S1, S2: std_logic;
   signal SELECT_REGA, SELECT_REGB: std_logic_vector(1 downto 0);
@@ -48,7 +48,11 @@ BEGIN
   --Destination register has two different positions depending on wether the instruction is I-TYPE (20 downto 16) or R-TYPE (15 downto 11)
   IS_REGOP <= '1' when (FETCHED_INST(31 downto 26)=OPCODE_RTYPE) else '0';
   decide_position_of_rd: ENTITY work.MUX21_GENERIC
-  GENERIC MAP(WIDTH => REG_ADDRESS_SIZE) PORT MAP (A => FETCHED_INST(15 downto 11), B => FETCHED_INST(20 downto 16), S => IS_REGOP, Y => RD_NCLK);
+  GENERIC MAP(WIDTH => REG_ADDRESS_SIZE) PORT MAP (A => FETCHED_INST(15 downto 11), B => FETCHED_INST(20 downto 16), S => IS_REGOP, Y => RD_FROM_IR);
+  -- Destination register must be R31 if the instruction is a jump-and-link
+  IS_JAL <= '1' when (opcodeof(FETCHED_INST)=OPCODE_JAL) else '0';
+  decide_if_its_jal: ENTITY work.MUX21_GENERIC
+  GENERIC MAP(WIDTH => REG_ADDRESS_SIZE) PORT MAP(A => "11111", B => RD_FROM_IR, S => IS_JAL, Y => RD_NCLK);
 
   --Puts another delay in order to align register address to CU work ( NCLK is entering the CU, while it will enter the RF on the next clock cycle)
   clk_rs1: ENTITY work.DELAY_BLOCK

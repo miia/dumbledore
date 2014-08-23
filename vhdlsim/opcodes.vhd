@@ -9,6 +9,7 @@ package opcodes is
   constant OPCODE_ADDI: CODE := "000000";
   constant OPCODE_SUBI: CODE := "000000";
   constant OPCODE_J: CODE := "000010";
+  constant OPCODE_JAL: CODE := "000011";
   constant OPCODE_NOP: CODE := "010101";
   constant OPCODE_LB: CODE := "100000";
   constant OPCODE_LH: CODE := "100001";
