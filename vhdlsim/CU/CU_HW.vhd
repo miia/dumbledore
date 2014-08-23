@@ -17,7 +17,9 @@ entity DLX_CU is
     CLK                : in  std_logic;
     RST                : in  std_logic;
     OPCODE             : in CODE; --this input will be connected to the 6 Opcode bits of the IR
-    FUNC_IN              : in FUNC; --this input will be conected to the 11 Function bits of the IR
+    FUNC_IN            : in FUNC; --this input will be conected to the 11 Function bits of the IR
+
+    PRED               : in std_logic; --this input is the prediction for a Branch instruction that was computed into the fetch stage; it should get into the EX stage to let it know which formula to use to compute the fallback adddress (if PRED=1 => fallback computed as PC+0; if PRED=0 => fallback computed as PC+Immediate from branch instruction).
     
     -- IF Control Signals
     PC_EN   : out std_logic;         -- Program Counter Latch Enable --TODO: ONLY USED IF REGISTERS HAVE "EN" INPUT
@@ -197,7 +199,7 @@ begin  -- dlx_cu_hw architecture
 
      --control signals for stage 4 (WB)
      --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE - 0) corresponds to S3; (0 = pass output from Data Memory)
-     --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE - 1) corresponds to WF1; (1 = write on RegFile)
+     --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE - 1) corresponds to WF1 (and implicitly also activates EN1 - see the signal going into EN1 above); (1 = write on RegFile)
 
       cw <= NOP_SIGNALS; -- DEFAULT ASSIGNMENT: nop. this is necessary because even the recognized instructions will not set every single bit of the control word.
 
@@ -332,13 +334,75 @@ begin  -- dlx_cu_hw architecture
 
 
       elsif(IR_opcode(OP_CODE_SIZE-1 downto OP_CODE_SIZE-1-2) = "000") then --first 3 bits of Opcode field tell us this is an I-type branch or jump instruction (i.e., with an immediate operand, to be added to PC+4)
-                                                                              --I-type => from left to right, first 6 bits of IR are the Opcode field, then 5 bits are R1, 5 bits are R2, and 16 bits are the Immediate field.
+                                                                            --this means J, JAL, BEQZ, or BNEZ.
+                                                                            --I-type => from left to right, first 6 bits of IR are the Opcode field, then 5 bits are R1, 5 bits are R2, and 16 bits are the Immediate field.
 
-          --(TODO: generate common signals to all I-type operations)
-          --(TODO: generate common signals to all branch or jump operations)
-          --(TODO: look at bit 28 of IR (bit 2 of IR_opcode) to see if it's a branch (conditional) of just a jmp (unconditional); if the bit is 1 (branch), generate the additional signals needed by a branch and not by a jmp.
-              --that is: the branches need the additional configuration of the branch unit, etc...)
-          --(TODO: now look at bits 27,26 of IR (bits 1,0 of IR_opcode) for exact instruction and generate specific signals.)
+
+          -- Do not generate the signals common to all I-type instructions, because jump/branch instructions (J and JAL, BEZ and BNEZ) are a particulare case: they DON'T REQUIRE the same activation signals as all other I-type instructions (e.g.: for Jump instructions, the fetch_stage autonomously computes the target address and updates the PC; for Branch instructions, the destination of the ALU output is not the register file, but rather the PC (or actually the branch unit).... and so on).
+          -- The only signals common to all these 4 instructions are "keep the fetch stage going as usual":
+          cw(CW_SIZE-1 downto CW_SIZE-1-2) <= "111"; --enable all registers of the IF stage
+
+          --Look at bit 28 of IR (bit 2 of IR_opcode) to see if it's a branch (conditional, i.e. BEZ or BNEZ) of just a jmp (unconditional, i.e.J or JAL);
+          case IR_opcode(OP_CODE_SIZE-1-3) is
+
+          when '0' => -- J or JAL
+                      -- NOTE: jump instructions DON'T use the ALU to compute the target address and update the PC - that's all done by the fetch stage autonomously.
+                      -- the CU is only responsible for the "additional" functions (e.g. JAL => the CU just worries about saving the value of PC in register r30).
+
+              --now look at bits 27,26 of IR (bits 1,0 of IR_opcode) for exact instruction and generate specific signals:
+              case IR_opcode(OP_CODE_SIZE-1-4 downto OP_CODE_SIZE-1-5) is
+              when "10" => -- J instruction.
+                          NULL; -- J instruction needs NOTHING from the CU - it just has to sit there => leave NOP.
+              when "11" => -- JAL instruction. similar to J, with the addition of saving PC value in register R30.
+                          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 0) <= '1'; --pass PC value into ALU from muxA;
+
+                          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 1) <= '0'; --pass rightB_out into ALU from muxB;
+                          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 4 downto CW_SIZE-1 - 5) <= "00"; --rightB_out will be "000...00"; TODO: shouldn't the constant value be 4 instead of 0?? we need to do PC+4...
+
+                          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-11) <= "00"; --needs the ADD/SUB block of the ALU to be selected in the output mux inside the ALU. generate corresponding signal.
+                          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "10"; --select output of adder/subtractor, request addition (=> result is PC+0).
+
+                          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-16) <= '1'; --enable ALU output register
+
+                          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE-1) <= "11"; --mux passes output of ALU in the Writeback stage; Register File Write enabled.
+
+                          --TODO TODO TODO: we need a way to control the DESTINATION register from here - we now want to select register r30 as destination register in the regfile!!!
+
+              when others => cw <= NOP_SIGNALS; --instruction is not recognized, fall back to NOP.
+
+
+          when '1' => -- BEZ or BNEZ
+                      -- NOTE: in the case of BEZ or BNEZ, the ALU is in charge of computing the fallback address (which will then go from the ALU output to the Branch Unit);
+                      -- in BOTH cases (bez or bnez), the activation signals will be exactly the same!!
+                      -- but the CU needs to do 2 things:
+                      -- 1) compute the fallback address (whose formula depends on the prediction that the BPU had performed earlier in the fetch stage: either fallback <= PC if predicted taken, or fallback <= PC+Immediate otherwise)
+                      -- 2) send the register to be checked along the rightA_out signal (because the Branch Unit will check its value and decide whether it should jump to the fallback address + flush the pipeline).
+
+
+                      --Common signals to both Branch instructions:
+                      cw(CW_SIZE-1-CW_IF_SIZE - 2) <= '1'; --enable regfile output registers (and also Immediate register);
+
+                      --pass appropriate register through rightA_out (will be read by Branch Unit inside fetch_stage):
+                      cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 2 downto CW_SIZE-1 - 3) <= "01"; --select value from regfile output A; the RS1 field of the Branch instruction will automatically select the appropriate register from the RF
+             
+                      cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 0) <= '1';   --pass PC value into ALU from muxA (always needed to compute the Fallback address);
+                      --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-16) <= '1';  --enable ALU output register TODO: not needed, right?
+
+                      case PRED is
+
+                      when '0' => --branch was predicted as not taken => compute fallback addr as PC + Imm
+                                  cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 1) <= '1'; --pass Immediate value into ALU from muxB;
+
+                      when '1' => --branch was predicted as taken => compute fallback addr as PC + 0
+                                  cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 1) <= '0'; --pass rightB_out into ALU from muxB;
+                                  cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 4 downto CW_SIZE-1 - 5) <= "00"; --rightB_out will be "000...00"; TODO: shouldn't the constant value be 4 instead of 0?? we need to do PC+4...
+
+                      when others => cw <= NOP_SIGNALS; --instruction is not recognized, fall back to NOP.
+
+
+          when others => cw <= NOP_SIGNALS; --instruction is not recognized, fall back to NOP.
+
+
 
 
       elsif(IR_opcode(OP_CODE_SIZE-1 downto OP_CODE_SIZE-1-3) = "0101") then --first 4 bits of Opcode field tell us this is an I-type shift instruction
