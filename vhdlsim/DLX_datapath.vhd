@@ -56,7 +56,7 @@ ARCHITECTURE dlx_simple OF DLX_DATAPATH IS
   signal pipe1b_in, pipe1b_out: REGISTER_CONTENT;
   signal pipe1in2_in, pipe1in2_out : std_logic_vector(REGISTER_SIZE/2-1 downto 0); -- this register holds the Immediate value coming fromthe IR, BEFORE its extension to 32 bits (which takes place in the EX stage).
   signal pipe1in1_in, pipe1in1_out, memory_out, pipe3out_out: REGISTER_CONTENT;-- We put immediate in the B side of the ALU so that we can make SUBI
-  signal pipe1rd1_out, pipe2rd2_out: REG_ADDRESS;
+  signal pipe1rd1_out, pipe2rd2_out, pipe3rd3_out: REG_ADDRESS;
   signal ALU_A, ALU_B, ALU_OUT, pipe2aluout_out, pipe2me_out, writeback_data: REGISTER_CONTENT;-- Data input for ALU
   signal regO_out, regBa_out, rightA_out, rightB_out: REGISTER_CONTENT;-- Data input for ALU
   signal input_for_right_a, input_for_right_b: mux_generic_input(3 downto 0, REGISTER_SIZE-1 downto 0);
@@ -77,10 +77,10 @@ BEGIN
   RD1 => RF1,
   RD2 => RF2,
   WR => WF1,
-  ADD_WR => pipe2rd2_out,
+  ADD_WR => pipe3rd3_out,
   ADD_RD1 => RS1,
   ADD_RD2 => RS2,
-  DATAIN => writeback_data,
+  DATAIN => pipe3out_out,
   OUT1 => pipe1a_in,
   OUT2 => pipe1b_in,
   REG_FIXED_OUT => R30_OUT
@@ -218,8 +218,10 @@ BEGIN
   -- LH=0, LB=0 => word
   memory: ENTITY work.MEMORY_STAGE
   PORT MAP(CLK => CLK, RESET => RESET, ADDR => pipe2aluout_out, RD_MEM => RM, WR => WM, SIGN => SIGN, LH => LH, LB => LB, DATA_IN => pipe2me_out, DATA_OUT => memory_out);
-  pipe3out: ENTITY work.REG_GENERIC
-  GENERIC MAP(WIDTH => REGISTER_SIZE) PORT MAP(D => writeback_data, CK => CLK, RESET => RESET, Q => pipe3out_out);
+  pipe3out: ENTITY work.LATCH_GENERIC
+  GENERIC MAP(WIDTH => REGISTER_SIZE) PORT MAP(D => writeback_data, CLK => CLK, RESET => RESET, Q => pipe3out_out);
+  pipe3rd3: ENTITY work.LATCH_GENERIC
+  GENERIC MAP(WIDTH => REG_ADDRESS_SIZE) PORT MAP(D => pipe2rd2_out, CLK => CLK, RESET => RESET, Q => pipe3rd3_out);
 
 
 END ARCHITECTURE;

@@ -99,7 +99,7 @@ begin  -- dlx_cu_hw architecture
   -- control signals for stage 1 (ID)
   RF1 <= cw1(CW_SIZE-1-CW_IF_SIZE - 0);
   RF2 <= cw1(CW_SIZE-1-CW_IF_SIZE - 1);
-  EN1 <= cw1(CW_SIZE-1-CW_IF_SIZE - 2);
+  EN1 <= cw1(CW_SIZE-1-CW_IF_SIZE - 2) or cw4(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE - 1); -- Enable can be enabled by either the control word OR the write signal of three instructions before (or both)
 
   -- control signals for stage 2 (EX)
   S1  <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 0);
@@ -122,13 +122,17 @@ begin  -- dlx_cu_hw architecture
 
   -- control signals for stage 4 (WB)
   S3  <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE - 0);
-  WF1 <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE - 1);
+  WF1 <= cw4(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE - 1);
 
 
   ---------------------------------------------------------------------------------------------
   -- Process to handle pipelining of control signals:                                        --
   -- this process does NOT decide the CONTENT of signals output by the CU, just their TIMING.--
   ---------------------------------------------------------------------------------------------
+  -- CW4 will be latched instead of flip-flop'd to respect setup time of register file.
+  cw4_latch: ENTITY work.LATCH_GENERIC
+  GENERIC MAP(WIDTH => CW_SIZE-CW_IF_SIZE-CW_ID_SIZE -CW_EX_SIZE-CW_MEM_SIZE)
+  PORT MAP(CLK => CLK, RESET => RST, D => cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE downto 0), Q => cw4);
 
   CONTROL_SIGNALS_PROC: process (Clk, Rst, IR_opcode, IR_func)
   begin  -- process Clk
@@ -138,7 +142,6 @@ begin  -- dlx_cu_hw architecture
         cw1 <= (others => '0');
         cw2 <= (others => '0');
         cw3 <= (others => '0');
-        cw4 <= (others => '0');
         --cw5 <= (others => '0');
         --aluOpcode1 <= NOP;
         --aluOpcode2 <= NOP;
@@ -150,7 +153,6 @@ begin  -- dlx_cu_hw architecture
            cw1 <= cw(CW_SIZE-1-CW_IF_SIZE downto 0);
            cw2 <= cw1(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE downto 0);
            cw3 <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE downto 0);
-           cw4 <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE downto 0);
            --aluOpcode1 <= aluOpcode_i;
            --aluOpcode2 <= aluOpcode1;
            --aluOpcode3 <= aluOpcode2;
