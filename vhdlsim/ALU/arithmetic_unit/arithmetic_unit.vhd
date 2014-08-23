@@ -39,7 +39,7 @@ BEGIN
 
   resultmux: ENTITY work.MUX21_GENERIC
   GENERIC MAP(WIDTH => WIDTH)
-  PORT MAP(A => mulout, B => addout, S => OP(1), Y => Y);
+  PORT MAP(A => addout, B => mulout, S => OP(1), Y => Y);
 
 END ARCHITECTURE;
 
