@@ -402,6 +402,8 @@ begin  -- dlx_cu_hw architecture
 
                       when '1' => --branch was predicted as not taken => compute fallback addr as PC + Imm
                                   cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 1) <= '1'; --pass Immediate value into ALU from muxB;
+                                  cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 15) <= '1';  --we want to perform SIGNED addition (=> extend the Immediate value as a signed integer).
+
                       when '0' => --branch was predicted as taken => compute fallback addr as PC + 0
                                   cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 1) <= '0'; --pass rightB_out into ALU from muxB;
                                   cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 4 downto CW_SIZE-1 -CW_IF_SIZE-CW_ID_SIZE- 5) <= "00"; --rightB_out will be "000...00"; TODO: shouldn't the constant value be 4 instead of 0?? we need to do PC+4...
