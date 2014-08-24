@@ -86,6 +86,7 @@ BEGIN
             RST => RESET,
             OPCODE => FETCHED_INST(31 downto 26),
             FUNC_IN => FETCHED_INST(10 downto 0),
+            PRED   => NOT_JMP_TAKEN,
             PC_EN => open,
             IR_LATCH_EN => open,
             NPC_LATCH_EN => open,

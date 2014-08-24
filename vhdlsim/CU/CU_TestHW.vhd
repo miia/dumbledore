@@ -39,7 +39,8 @@ begin
                  S3     => S3_i,
                  -- INPUTS
                  OPCODE => cu_opcode_i,
-                 FUNC_IN   => cu_func_i,            
+                 FUNC_IN   => cu_func_i,  
+                 PRED   => '0',          
                  Clk    => Clock,
                  Rst    => Reset
                );

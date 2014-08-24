@@ -357,7 +357,7 @@ begin  -- dlx_cu_hw architecture
                           cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 0) <= '1'; --pass PC value into ALU from muxA;
 
                           cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 1) <= '0'; --pass rightB_out into ALU from muxB;
-                          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 4 downto CW_SIZE-1 - 5) <= "00"; --rightB_out will be "000...00"; TODO: shouldn't the constant value be 4 instead of 0?? we need to do PC+4...
+                          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 4 downto CW_SIZE-1 -CW_IF_SIZE-CW_ID_SIZE- 5) <= "00"; --rightB_out will be "000...00"; TODO: shouldn't the constant value be 4 instead of 0?? we need to do PC+4...
 
                           cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-11) <= "00"; --needs the ADD/SUB block of the ALU to be selected in the output mux inside the ALU. generate corresponding signal.
                           cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "10"; --select output of adder/subtractor, request addition (=> result is PC+0).
@@ -369,7 +369,7 @@ begin  -- dlx_cu_hw architecture
                           --TODO TODO TODO: we need a way to control the DESTINATION register from here - we now want to select register r30 as destination register in the regfile!!!
 
               when others => cw <= NOP_SIGNALS; --instruction is not recognized, fall back to NOP.
-
+             end case;
 
           when '1' => -- BEZ or BNEZ
                       -- NOTE: in the case of BEZ or BNEZ, the ALU is in charge of computing the fallback address (which will then go from the ALU output to the Branch Unit);
@@ -383,25 +383,24 @@ begin  -- dlx_cu_hw architecture
                       cw(CW_SIZE-1-CW_IF_SIZE - 2) <= '1'; --enable regfile output registers (and also Immediate register);
 
                       --pass appropriate register through rightA_out (will be read by Branch Unit inside fetch_stage):
-                      cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 2 downto CW_SIZE-1 - 3) <= "01"; --select value from regfile output A; the RS1 field of the Branch instruction will automatically select the appropriate register from the RF
+                      cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 2 downto CW_SIZE-1 -CW_IF_SIZE-CW_ID_SIZE- 3) <= "01"; --select value from regfile output A; the RS1 field of the Branch instruction will automatically select the appropriate register from the RF
              
                       cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 0) <= '1';   --pass PC value into ALU from muxA (always needed to compute the Fallback address);
                       --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-16) <= '1';  --enable ALU output register TODO: not needed, right?
 
-                      case PRED is
+                      case PRED is -- Note that the prediction entering the CU is actually inverted - the fetch stage informs the cu of what prediction *THE CU* shall compute (i.e. the wrong one)
 
-                      when '0' => --branch was predicted as not taken => compute fallback addr as PC + Imm
+                      when '1' => --branch was predicted as not taken => compute fallback addr as PC + Imm
                                   cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 1) <= '1'; --pass Immediate value into ALU from muxB;
-
-                      when '1' => --branch was predicted as taken => compute fallback addr as PC + 0
+                      when '0' => --branch was predicted as taken => compute fallback addr as PC + 0
                                   cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 1) <= '0'; --pass rightB_out into ALU from muxB;
-                                  cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 4 downto CW_SIZE-1 - 5) <= "00"; --rightB_out will be "000...00"; TODO: shouldn't the constant value be 4 instead of 0?? we need to do PC+4...
+                                  cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 4 downto CW_SIZE-1 -CW_IF_SIZE-CW_ID_SIZE- 5) <= "00"; --rightB_out will be "000...00"; TODO: shouldn't the constant value be 4 instead of 0?? we need to do PC+4...
 
                       when others => cw <= NOP_SIGNALS; --instruction is not recognized, fall back to NOP.
-
+                  end case;
 
           when others => cw <= NOP_SIGNALS; --instruction is not recognized, fall back to NOP.
-
+      end case;
 
 
 
