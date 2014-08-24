@@ -41,6 +41,7 @@ begin
                  OPCODE => cu_opcode_i,
                  FUNC_IN   => cu_func_i,  
                  PRED   => '0',          
+                 FLUSH_PIPELINE => '0',
                  Clk    => Clock,
                  Rst    => Reset
                );

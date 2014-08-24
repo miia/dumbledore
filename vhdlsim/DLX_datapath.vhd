@@ -19,6 +19,7 @@ ENTITY DLX_DATAPATH IS
  RF1      : in std_logic;  -- Register A Latch Enable
  RF2      : in std_logic;  -- Register B Latch Enable
  R30_OUT  : out REGISTER_CONTENT; -- Output from register R30
+ ALU_EXPORT: out REGISTER_CONTENT; -- Output from the ALU -- where to get the fallback address
  EN1      : in std_logic;  -- Register file / Immediate Register Enable
 
 
@@ -223,6 +224,7 @@ BEGIN
   pipe3rd3: ENTITY work.LATCH_GENERIC
   GENERIC MAP(WIDTH => REG_ADDRESS_SIZE) PORT MAP(D => pipe2rd2_out, CLK => CLK, RESET => RESET, Q => pipe3rd3_out);
 
+  ALU_EXPORT <= ALU_OUT;
 
 END ARCHITECTURE;
 

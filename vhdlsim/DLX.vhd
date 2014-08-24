@@ -38,7 +38,7 @@ BEGIN
   PORT MAP(
   CLK => CLK, RESET => RESET,
   RS1 => RS1, RS2 => RS2, RD => RD, IMM_16 => IMM_16, PC => CURRENT_PC, RF1 => RF1, RF2 => RF2, R30_OUT => POUT, EN1 => EN1, -- RF stage
-  S1 => S1, S2 => S2, SELECT_REGA => SELECT_REGA, SELECT_REGB => SELECT_REGB, ALU => ALU, EN2 => EN2, SIGN_EX => SIGN_EX, RA_OUT => RA_OUT, -- EX stage
+  S1 => S1, S2 => S2, SELECT_REGA => SELECT_REGA, SELECT_REGB => SELECT_REGB, ALU => ALU, ALU_EXPORT => FALLBACK_ADDRESS, EN2 => EN2, SIGN_EX => SIGN_EX, RA_OUT => RA_OUT, -- EX stage
   RM => RM, WM => WM, SIGN => SIGN, LH => LH, LB => LB, EN3 => EN3, MEMDATAIN => MEMDATAIN, MEMDATAOUT => MEMDATAOUT, MEMADDRESS => MEMADDRESS, S3 => S3, WF1 => WF1 -- MEM stage
   );
 
@@ -87,6 +87,7 @@ BEGIN
             OPCODE => FETCHED_INST(31 downto 26),
             FUNC_IN => FETCHED_INST(10 downto 0),
             PRED   => NOT_JMP_TAKEN,
+            FLUSH_PIPELINE => FLUSH_PIPELINE,
             PC_EN => open,
             IR_LATCH_EN => open,
             NPC_LATCH_EN => open,

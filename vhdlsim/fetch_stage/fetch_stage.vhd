@@ -88,28 +88,16 @@ BEGIN
   tobedelayed(2) <= set_wrong_force;
   tobedelayed(1) <= not not_check; --UGLY fix: temporarly transform not check to active-low, so that if register is resetted, first instruction will not be checked.
   tobedelayed(0) <= flags_tocheck;
-  delay_stage_1 : ENTITY work.REG_GENERIC
+  delay_predictions : ENTITY work.DELAY_BLOCK
     generic map(
-	  WIDTH => 3
+	  WIDTH => 3, NREGS => 3
 	)
 	port map(
 	  D => tobedelayed,
-		CK => CLK, --register can change value only if acc_en_n is '1' (acc_enable is '')
-		RESET => RESET,
-		Q => to_pipe_2
-	);
-
-  reg_pc : ENTITY work.REG_GENERIC
-    generic map(
-	  WIDTH => 3
-	)
-	port map(
-	  D => to_pipe_2,
-		CK => CLK, --register can change value only if acc_en_n is '1' (acc_enable is '')
+		CLK => CLK, --register can change value only if acc_en_n is '1' (acc_enable is '')
 		RESET => RESET,
 		Q => delayed_tobechecked
 	);
-	
   set_wrong_force_d <= delayed_tobechecked(2);
   no_check_d <= not delayed_tobechecked(1); -- See above
   flags_tocheck_d <= delayed_tobechecked(0);

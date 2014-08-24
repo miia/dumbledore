@@ -20,6 +20,7 @@ entity DLX_CU is
     FUNC_IN            : in FUNC; --this input will be conected to the 11 Function bits of the IR
 
     PRED               : in std_logic; --this input is the prediction for a Branch instruction that was computed into the fetch stage; it should get into the EX stage to let it know which formula to use to compute the fallback adddress (if PRED=1 => fallback computed as PC+0; if PRED=0 => fallback computed as PC+Immediate from branch instruction).
+    FLUSH_PIPELINE    : in std_logic; --When this input is active (high), the control word entering stage 2 (EX) is changed to a NOP.
     
     -- IF Control Signals
     PC_EN   : out std_logic;         -- Program Counter Latch Enable --TODO: ONLY USED IF REGISTERS HAVE "EN" INPUT
@@ -68,7 +69,7 @@ architecture CU_HW of DLX_CU is
   -- control word is shifted to the correct stage
   --signal cw0 : std_logic_vector(CW_SIZE-1 downto 0);         -- all 20 control signals; a part (CW_IF_SIZE) will go to stage zero (IF), the rest (17) will go to the next pipeline register
   signal cw1 : std_logic_vector(CW_SIZE-1-CW_IF_SIZE downto 0);       -- 17 control signals; a part (CW_ID_SIZE) will go to stage one (ID), the rest (14) will go to the next pipeline register
-  signal cw2 : std_logic_vector(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE downto 0);     -- 14 control signals; a part (CW_EX_SIZE) will go to stage two (EX), the rest (9) will go to the next pipeline register
+  signal cw2, cw1_or_nop : std_logic_vector(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE downto 0);     -- 14 control signals; a part (CW_EX_SIZE) will go to stage two (EX), the rest (9) will go to the next pipeline register
   signal cw3 : std_logic_vector(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE downto 0);   -- 9 control signals; a part (CW_MEM_SIZE) will go to stage three (MEM), the rest (2) will go to the next pipeline register
   signal cw4 : std_logic_vector(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE downto 0); -- 2 control signals (CW_WB_SIZE), which go directly to the last pipeline stage (WB)
 
@@ -126,6 +127,13 @@ begin  -- dlx_cu_hw architecture
   S3  <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE - 0);
   WF1 <= cw4(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE - 1);
 
+  --------------------------------------------------------------------------------------------
+  --Management for flush signals of the pipeline:                                           --
+  --Before entering EX stage (i.e. cw2), the control word can be changed to that of a NOP.  --
+  --To do this, this MUX is used.                                                           --
+  --------------------------------------------------------------------------------------------
+  select_cw1_or_nop: ENTITY work.MUX21_GENERIC
+  GENERIC MAP(WIDTH => CW_SIZE-CW_IF_SIZE-CW_ID_SIZE) PORT MAP(A => NOP_SIGNALS(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE downto 0), B => cw1(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE downto 0), S => FLUSH_PIPELINE, Y => cw1_or_nop); 
 
   ---------------------------------------------------------------------------------------------
   -- Process to handle pipelining of control signals:                                        --
@@ -153,7 +161,7 @@ begin  -- dlx_cu_hw architecture
 
            --cw0 <= cw;
            cw1 <= cw(CW_SIZE-1-CW_IF_SIZE downto 0);
-           cw2 <= cw1(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE downto 0);
+           cw2 <= cw1_or_nop(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE downto 0); -- CW2 can be changed to a NOP with a command
            cw3 <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE downto 0);
            --aluOpcode1 <= aluOpcode_i;
            --aluOpcode2 <= aluOpcode1;
