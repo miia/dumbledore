@@ -15,3 +15,4 @@ assembler.sh
 *.bin
 *.swp
 DLX_wave.do
+test.asm
