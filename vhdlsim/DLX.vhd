@@ -24,6 +24,7 @@ ARCHITECTURE structural OF DLX IS
   signal RM, WM, SIGN, LH, LB, EN3: std_logic;
   signal MEMDATAIN, MEMDATAOUT, MEMADDRESS: REGISTER_CONTENT;
   signal S3, WF1: std_logic; 
+  signal DEBUG: string(6 downto 1); --debug thingy (could even be routed as an output of the DLX entity if we wanted; right now, you need "add wave -r *" to see it.)
 
   --FETCH STAGE SIGNALS
   signal RDMEM: std_logic;
@@ -111,7 +112,8 @@ BEGIN
             LB => LB,
             SIGN_MEM => SIGN,
             S3 => S3,
-            WF1 => WF1
+            WF1 => WF1,
+            DEBUG => DEBUG --debug thingy
           );
   --Forwarding unit: IR must be aligned to the instruction *entering* the ALU, so it must be delayed of 2 clock cycles w.r.t. the CU instruction
   delay_to_forwarding: ENTITY work.DELAY_BLOCK

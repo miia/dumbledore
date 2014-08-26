@@ -20,3 +20,4 @@ subi r1,r1,1
 while:
 bnez r1,start_while;
 addi r4, r4, 1;
+nop

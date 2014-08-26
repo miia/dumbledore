@@ -3,6 +3,11 @@ use ieee.std_logic_1164.all;
 
 package myTypes is
 
+    --convenience function for debug in CU_HW
+    procedure PRINT
+     (DEBUG_MODE : in boolean;
+      INPUT      : in string(6 downto 1);
+      signal OUTPUT : out string(6 downto 1));
 
    -- Control unit sizes
     constant IR_SIZE : integer := 32; --size of the whole instruction (divided in [OPCODE, R1, R2, IMMEDIATE] or [OPCODE, R1, R2, R3, FUNC] )
@@ -147,6 +152,17 @@ package myTypes is
 end myTypes;
 
 package body myTypes is
+
+  --convenience function for debug in CU_HW:
+  procedure PRINT
+    (DEBUG_MODE : in boolean;
+     INPUT      : in string(6 downto 1);
+     signal OUTPUT : out string(6 downto 1)) is 
+  begin
+    if (DEBUG_MODE = true) then
+      OUTPUT <= INPUT;
+    end if;
+  end PRINT;
 
   function optype(opcode: CODE) return INST_TYPE is --gets first 2 bits of OPCODE, to tell instruction type (R, I)
   begin
