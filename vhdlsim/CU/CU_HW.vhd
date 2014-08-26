@@ -420,8 +420,7 @@ begin  -- dlx_cu_hw architecture
                           cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-16) <= '1'; --enable ALU output register
 
                           cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE-1) <= "11"; --mux passes output of ALU in the Writeback stage; Register File Write enabled.
-
-                          --TODO TODO TODO: we need a way to control the DESTINATION register from here - we now want to select register r30 as destination register in the regfile!!!
+                          --^NOTE: when the above instruction is recognized, the fetch_stage also recognizes it and automatically overrides the DESTINATION input of the regfile to be r31 (decentralized control) => the CU doesn't need to set the destination register address from here.
 
               when others => cw <= NOP_SIGNALS; --instruction is not recognized, fall back to NOP.
              end case;
@@ -513,10 +512,76 @@ begin  -- dlx_cu_hw architecture
 
           end case;
 
-      --elsif(ir(xx downto yy) = zzzz) then --LOAD/STORE (TODO, see below.)
-      --
-      --
 
+
+      elsif(IR_opcode(OP_CODE_SIZE-1 downto OP_CODE_SIZE-1-1) = "10") then --first 2 bits of Opcode field tell us this is an I-type LOAD or STORE instruction.
+                                                                           --I-type => from left to right, first 6 bits of IR are the Opcode field, then 5 bits are R1, 5 bits are R2, and 16 bits are the Immediate field.
+          --generate common signals to all I-type operations
+          cw(CW_SIZE-1 downto CW_SIZE-1-2) <= "111"; --enable all registers of the IF stage
+
+          cw(CW_SIZE-1-CW_IF_SIZE downto CW_SIZE-1-CW_IF_SIZE-2) <= "111"; --enable RF and corresponding output registers in the ID stage
+
+          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-5) <= "01"&"01"&"01"; --muxes will pass regA and the immediate operand (by default, keep forwarding disabled; will possibly be enabled later)
+                                                                                                          --(leave ALU and _EX signals to be set later;)
+          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-16) <= '1';                                                  --enable ALU output register
+          --configure ALU and EX-stage muxes for addition between regA and Imm (to get the load/store datamem address)
+          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-11) <= "00"; --selects the Arithmetic (adder-subtractor) block of the ALU in the output mux inside the ALU.
+          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "10"; --select output of adder/subtractor, request addition
+          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= '1';                                            --signed.
+
+          --NOT THIS TIME:
+          --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-6) <= "0000000"; --leave Data Memory completely unused - not activated, read and write disabled, output register disabled (Load Memory Register), etc.
+
+          --NOT THIS TIME:
+          --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE-1) <= "11"; --mux passes output of ALU in the Writeback stage; Register File Write enabled.
+          --^only in the case of a Store, the regfile will be written, and the output of the DATA MEM will be selected by the S3 mux instead of the ALU output.
+
+          --generate signals common to all Load/Store operations:
+          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-2) <= '1'; --enable Data Memory. (all the rest of the MEM stage signals will depend on whether it is a Load or a Store instruction)
+          
+          --look at bit 29 of IR (bit 3 of IR_opcode) to see whether it is a load instruction or a store instruction, and generate common signals:
+          case IR_opcode(3) is
+
+          when '0' => --instruction is a load: activate read from Data Memory + enable LMD output latch register + configure LB/LH/SIGN_MEM depending on specific instruction, configure S3 and WF1 for writeback from datamem to register file.
+
+              --(TODO:)generate signals common to all load instructions:
+
+              --now look at bits 28,27,26 of IR (bits 2,1,0 of IR_opcode) for exact Store instruction and generate specific signals.
+              case IR_opcode(2 downto 0) is
+
+              when "011" => --LW(TODO)
+
+
+              when "001" => --LH(TODO)
+
+
+              when "000" => --LB(TODO)
+
+
+              when others => 
+                           cw <= NOP_SIGNALS; --instruction is not recognized, fall back to NOP.
+                           PRINT(DEBUG_MODE, "??????", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+              end case;
+
+          when '1' => --instruction is a store: select regB as rightB_out (will go to DataMem input as the value to be stored), activate write on Data Memory. (no need to configure LMD register, load signals, or writeback signals.)
+
+              --generate signals common to all store instructions:
+              cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 4 downto CW_SIZE-1 - 5) <= "01"; --select regB as rightB_out (will go to DataMem input as the value to be stored)
+              cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 1) <= '1';  --activate write on Data Memory (so that the value carried by rightB_out will be written on the address computed by the ALU.)
+
+              --now look at bits 28,27,26 of IR (bits 2,1,0 of IR_opcode) for exact Store instruction and generate specific signals.
+              case IR_opcode(2 downto 0) is
+              when "011" => --SW
+                           NULL; --right now, store WORD is the only store that's supported => nothing to configure further.
+                           PRINT(DEBUG_MODE, "SW    ", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+              when others => --throw an error if anything else is requested.
+                           cw <= NOP_SIGNALS; --instruction is not recognized, fall back to NOP.
+                           PRINT(DEBUG_MODE, "??????", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+              end case;
+
+          when others => cw <= NOP_SIGNALS; --instruction is not recognized, fall back to NOP.
+                         PRINT(DEBUG_MODE, "??????", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+          end case;
 
       elsif(IR_opcode(OP_CODE_SIZE-1 downto OP_CODE_SIZE-1-2) = "001") then --first 3 bits of Opcode field tell us this is an I-type arithmetic/logic instruction (i.e. arithmetic/logic with immediate operand, including LHI).
                                                                               --I-type => from left to right, first 6 bits of IR are the Opcode field, then 5 bits are R1, 5 bits are R2, and 16 bits are the Immediate field.
