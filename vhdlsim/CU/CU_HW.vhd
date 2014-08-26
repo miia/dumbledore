@@ -13,6 +13,9 @@ entity DLX_CU is
 --    OP_CODE_SIZE       :     integer := 6;  -- Op Code Size
 --    IR_SIZE            :     integer := 32;  -- Instruction Register Size    
 --    CW_SIZE            :     integer := 15);  -- Control Word Size
+  generic (
+    DEBUG_MODE : boolean := true  --enables or disables "printing" debug text on an additional output port (just for simulation purposes: all the additional debug logic will get IGNORED during synthesis by setting DEBUG_MODE to false).
+          );
   port (
     CLK                : in  std_logic;
     RST                : in  std_logic;
@@ -53,7 +56,10 @@ entity DLX_CU is
 
     -- WB Control Signals
     S3         : out std_logic;  -- Write Back MUX Sel
-    WF1              : out std_logic -- Register File Write Enable
+    WF1              : out std_logic; -- Register File Write Enable
+
+    -- additional debug port - will be used in simulation with DEBUG_MODE=1
+    DEBUG      : out string(6 downto 1) --should be long enough for any instruction mnemonic...
   );
 
 end DLX_CU;
@@ -152,6 +158,9 @@ begin  -- dlx_cu_hw architecture
         cw1 <= (others => '0');
         cw2 <= (others => '0');
         cw3 <= (others => '0');
+        PRINT(DEBUG_MODE, "(RST) ", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+
+
         --cw5 <= (others => '0');
         --aluOpcode1 <= NOP;
         --aluOpcode2 <= NOP;
@@ -210,6 +219,8 @@ begin  -- dlx_cu_hw architecture
      --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE - 1) corresponds to WF1 (and implicitly also activates EN1 - see the signal going into EN1 above); (1 = write on RegFile)
 
       cw <= NOP_SIGNALS; -- DEFAULT ASSIGNMENT: nop. this is necessary because even the recognized instructions will not set every single bit of the control word.
+      PRINT(DEBUG_MODE, "NOP   ", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+
 
       if(IR_opcode(OP_CODE_SIZE-1 downto 0) = "000000") then --all R-type instructions
       --instruction is R-type (=Register-Register operations);
@@ -249,43 +260,56 @@ begin  -- dlx_cu_hw architecture
 
               --now look at bits 1,0 of IR (of IR_func) for exact instruction and generate specific signals.
                 case IR_func(1 downto 0) is
-          when "00" => -- SLL
+                when "00" => -- SLL
                                          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-12 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "111"; --Logical; Shift; Left
-          when "10" => -- SRL
+                                         PRINT(DEBUG_MODE, "SLL   ", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+                when "10" => -- SRL
                                          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-12 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "110"; --Logical; Shift; Right
-          when "11" => -- SRA
+                                         PRINT(DEBUG_MODE, "SRL   ", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+                when "11" => -- SRA
                                          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-12 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "010"; --Arithmetic; Shift; Right
-          when others => cw <= NOP_SIGNALS; --instruction is not recognized, fall back to NOP.
+                                         PRINT(DEBUG_MODE, "SRA   ", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+
+                when others => cw <= NOP_SIGNALS; --instruction is not recognized, fall back to NOP.
+                               PRINT(DEBUG_MODE, "??????", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
                 end case;
 
           when "100"|"110"      => --(5,3)=(1,0) => all R-type arith/logic operations
 
-            --generate common signals to all arithmetic/logic operations:
-                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9) <= '0'; --bit 5 of ALU control signals can pre-select within ALU between LH output and logic unit output; set it to zero (logic unit).
+              --generate common signals to all arithmetic/logic operations:
+              cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9) <= '0'; --bit 5 of ALU control signals can pre-select within ALU between LH output and logic unit output; set it to zero (logic unit).
 
-            --now look at bits 2,1,0 of IR (of IR_func) for exact instruction and generate specific signals.
-                case IR_func(2) is
-                when '0' => --it's an arithmetic (ADD/SUB) operation;
+              --now look at bits 2,1,0 of IR (of IR_func) for exact instruction and generate specific signals.
+              case IR_func(2) is
+              when '0' => --it's an arithmetic (ADD/SUB) operation;
 
                     cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-11) <= "00"; --needs the ADD/SUB block of the ALU to be selected in the output mux inside the ALU. generate corresponding signal.
 
                     case IR_func(1 downto 0) is  --NOTE: right now the SIGN_EX bit is only used to extend the Immediate field (=> only used in ADDI, ADDUI, SUBI, SUBUI etc.)
                                                  --      that's because there are no carry flag, overflow flag or similar generated by the ALU
                                                  --      => with the following 4 instructions, SIGN_EX is driven just for (possible) future use.
-            when "00" => -- ADD
+                    when "00" => -- ADD
                                           cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "10"; --select output of adder/subtractor, request addition
                                           cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= '1';                                           --signed.
-            when "01" => -- ADDU
-                                          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "10"; --select output of adder/subtractor, request addition
-                                          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= '0';                                           --unsigned.
-            when "10" => -- SUB
-                                          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "11"; --select output of adder/subtractor, request subtraction
-                                          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= '1';                                           --signed.
-            when "11" => -- SUBU
-                                          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "11"; --select output of adder/subtractor, request subtraction
-                                          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= '0';                                           --unsigned.
+                                          PRINT(DEBUG_MODE, "ADD   ", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
 
-            when others => cw <= NOP_SIGNALS; --instruction is not recognized, fall back to NOP.
+                    when "01" => -- ADDU
+                                          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "10"; --select output of adder/subtractor, request addition
+                                          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= '0';                                           --unsigned.
+                                          PRINT(DEBUG_MODE, "ADDU  ", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+                    when "10" => -- SUB
+                                          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "11"; --select output of adder/subtractor, request subtraction
+                                          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= '1';                                           --signed.
+                                          PRINT(DEBUG_MODE, "SUB   ", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+
+                    when "11" => -- SUBU
+                                          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "11"; --select output of adder/subtractor, request subtraction
+                                          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= '0';                                           --unsigned.
+                                          PRINT(DEBUG_MODE, "SUBU  ", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+
+
+                    when others => cw <= NOP_SIGNALS; --instruction is not recognized, fall back to NOP.
+                                   PRINT(DEBUG_MODE, "??????", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
                     end case;
 
                 when '1' => --it's a logic operation;
@@ -294,52 +318,66 @@ begin  -- dlx_cu_hw architecture
 
                     case IR_func(1 downto 0) is
 
-            when "00" => -- AND
-                                          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "01"; --select AND
-            when "01" => -- OR
-                                          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "00"; --select OR
-            when "10" => -- XOR
-                                          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "10"; --select XOR
+                    when "00" => -- AND
+                                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "01"; --select AND
+                                PRINT(DEBUG_MODE, "AND   ", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+                    when "01" => -- OR
+                                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "00"; --select OR
+                                PRINT(DEBUG_MODE, "OR    ", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+                    when "10" => -- XOR
+                                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "10"; --select XOR
+                                PRINT(DEBUG_MODE, "XOR   ", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
 
-            when others => cw <= NOP_SIGNALS; --instruction is not recognized, fall back to NOP.
+                    when others => cw <= NOP_SIGNALS; --instruction is not recognized, fall back to NOP.
+                                   PRINT(DEBUG_MODE, "??????", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
                     end case;
 
-          when others => cw <= NOP_SIGNALS; --instruction is not recognized, fall back to NOP.
-          end case;
+                when others => cw <= NOP_SIGNALS; --instruction is not recognized, fall back to NOP.
+                               PRINT(DEBUG_MODE, "??????", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+                end case;
 
           when "001"|"101"|"011"|"111" => --(bit 3)=1 => all R-type set operations (further subdivision possible here: bit 4 of IR tells if the comparison must be signed or unsigned.)
 
-            --generate common signals to all set operations:
+              --generate common signals to all set operations:
 
-          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9) <= '0'; --bit 5 of ALU control signals can pre-select within ALU between LH output and logic unit output; unused, set it to zero (logic unit).
+              cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9) <= '0'; --bit 5 of ALU control signals can pre-select within ALU between LH output and logic unit output; unused, set it to zero (logic unit).
 
-                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-11) <= "11"; --needs the Logic block of the ALU to be selected in the output mux inside the ALU. generate corresponding signal.
+              cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-11) <= "11"; --needs the Logic block of the ALU to be selected in the output mux inside the ALU. generate corresponding signal.
 
-                --configure ALU's arithmetic unit for register-register subtraction (take same activation signals as R-type subtraction above).
-          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "11"; --pre-select output of adder/subtractor within arithmetic unit, request subtraction
-                cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= IR_func(4); --use bit 4 of IR (of IR_func) directly to drive the "unsigned" pin of the arithmetic unit block
+              --configure ALU's arithmetic unit for register-register subtraction (take same activation signals as R-type subtraction above).
+              cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "11"; --pre-select output of adder/subtractor within arithmetic unit, request subtraction
+              cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= IR_func(4); --use bit 4 of IR (of IR_func) directly to drive the "unsigned" pin of the arithmetic unit block
 
 
               --now look at bits 2,1,0 of IR (of IR_func) for exact instruction, and generate specific signals (to configure the Compare unit).
-            --THIS IS DONE IN PAIRS: slt|sltu will have identical signals (signed/unsigned has already been taken care of); same for sgt|sgtu, etc.
+              --THIS IS DONE IN PAIRS: slt|sltu will have identical signals (signed/unsigned has already been taken care of); same for sgt|sgtu, etc.
 
-          case IR_func(2 downto 0) is
-          when "000" => -- SEQ
-                              cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-6 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-8) <= "010";
-          when "001" => -- SNE
-                              cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-6 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-8) <= "011";
-          when "010" => -- SLT/SLTU
-                              cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-6 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-8) <= "000";
-          when "011" => -- SGT/SGTU
-                              cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-6 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-8) <= "101";
-          when "100" => -- SLE/SLEU
-                              cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-6 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-8) <= "001";
-          when "101" => -- SGE/SGEU
-                              cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-6 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-8) <= "100";
-          when others => cw <= NOP_SIGNALS; --instruction is not recognized, fall back to NOP.
-                end case;
+              case IR_func(2 downto 0) is
+              when "000" => -- SEQ
+                          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-6 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-8) <= "010";
+                          PRINT(DEBUG_MODE, "SEQ   ", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+              when "001" => -- SNE
+                          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-6 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-8) <= "011";
+                          PRINT(DEBUG_MODE, "SNE   ", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+              when "010" => -- SLT/SLTU
+                          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-6 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-8) <= "000";
+                          PRINT(DEBUG_MODE, "SLT(U)", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+              when "011" => -- SGT/SGTU
+                          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-6 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-8) <= "101";
+                          PRINT(DEBUG_MODE, "SGT(U)", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+              when "100" => -- SLE/SLEU
+                          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-6 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-8) <= "001";
+                          PRINT(DEBUG_MODE, "SLE(U)", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+              when "101" => -- SGE/SGEU
+                          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-6 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-8) <= "100";
+                          PRINT(DEBUG_MODE, "SGE(U)", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+              when others => cw <= NOP_SIGNALS; --instruction is not recognized, fall back to NOP.
+                             PRINT(DEBUG_MODE, "??????", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+              end case;
+
 
           when others => cw <= NOP_SIGNALS; --instruction is not recognized, fall back to NOP.
+                         PRINT(DEBUG_MODE, "??????", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
           end case;
 
 
@@ -358,6 +396,10 @@ begin  -- dlx_cu_hw architecture
           when '0' => -- J or JAL
                       -- NOTE: jump instructions DON'T use the ALU to compute the target address and update the PC - that's all done by the fetch stage autonomously.
                       -- the CU is only responsible for the "additional" functions (e.g. JAL => the CU just worries about saving the value of PC in register r30).
+
+
+              PRINT(DEBUG_MODE, "J(AL) ", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+
 
               --now look at bits 27,26 of IR (bits 1,0 of IR_opcode) for exact instruction and generate specific signals:
               case IR_opcode(OP_CODE_SIZE-1-4 downto OP_CODE_SIZE-1-5) is
@@ -389,6 +431,9 @@ begin  -- dlx_cu_hw architecture
                       -- 2) send the register to be checked along the rightA_out signal (because the Branch Unit will check its value and decide whether it should jump to the fallback address + flush the pipeline).
 
 
+                      PRINT(DEBUG_MODE, "B(N)EZ", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+
+
                       --Common signals to both Branch instructions:
                       cw(CW_SIZE-1-CW_IF_SIZE - 2) <= '1'; --enable regfile output registers (and also Immediate register);
 
@@ -399,6 +444,7 @@ begin  -- dlx_cu_hw architecture
                       --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-16) <= '1';  --enable ALU output register TODO: not needed, right?
 
                       cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "10"; -- ALU configuration: select output from adder/subtractor, request addition
+
 
                       case PRED is -- Note that the prediction entering the CU is actually inverted - the fetch stage informs the cu of what prediction *THE CU* shall compute (i.e. the wrong one)
 
@@ -411,9 +457,13 @@ begin  -- dlx_cu_hw architecture
                                   cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 4 downto CW_SIZE-1 -CW_IF_SIZE-CW_ID_SIZE- 5) <= "00"; --rightB_out will be "000...00"; TODO: shouldn't the constant value be 4 instead of 0?? we need to do PC+4...
 
                       when others => cw <= NOP_SIGNALS; --instruction is not recognized, fall back to NOP.
+                                     PRINT(DEBUG_MODE, "??????", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+
                   end case;
 
           when others => cw <= NOP_SIGNALS; --instruction is not recognized, fall back to NOP.
+                         PRINT(DEBUG_MODE, "??????", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+
       end case;
 
 
@@ -422,36 +472,42 @@ begin  -- dlx_cu_hw architecture
                                                                                --(i.e. a shift, but with immediate source; the R-type shift instructions, instead, have already been covered above)
                                                                                --I-type => from left to right, first 6 bits of IR are the Opcode field, then 5 bits are R1, 5 bits are R2, and 16 bits are the Immediate field.
 
-        --generate common signals to all I-type operations
-            cw(CW_SIZE-1 downto CW_SIZE-1-2) <= "111"; --enable all registers of the IF stage
+          --generate common signals to all I-type operations
+          cw(CW_SIZE-1 downto CW_SIZE-1-2) <= "111"; --enable all registers of the IF stage
 
-            cw(CW_SIZE-1-CW_IF_SIZE downto CW_SIZE-1-CW_IF_SIZE-2) <= "111"; --enable RF and corresponding output registers in the ID stage
+          cw(CW_SIZE-1-CW_IF_SIZE downto CW_SIZE-1-CW_IF_SIZE-2) <= "111"; --enable RF and corresponding output registers in the ID stage
 
-            cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-5) <= "01"&"01"&"01"; --muxes will pass regA and the immediate operand (by default, keep forwarding disabled; will possibly be enabled later)
+          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-5) <= "01"&"01"&"01"; --muxes will pass regA and the immediate operand (by default, keep forwarding disabled; will possibly be enabled later)
                     --(leave ALU and _EX signals to be set later;)
-            cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-16) <= '1';                                                  --enable ALU output register
+          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-16) <= '1';                                                  --enable ALU output register
 
-            cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-6) <= "0000000"; --leave Data Memory completely unused - not activated, read and write disabled, output register disabled (Load Memory Register), etc. 
+          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-6) <= "0000000"; --leave Data Memory completely unused - not activated, read and write disabled, output register disabled (Load Memory Register), etc. 
 
-            cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE-1) <= "11"; --mux passes output of ALU in the Writeback stage; Register File Write enabled.
+          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE-1) <= "11"; --mux passes output of ALU in the Writeback stage; Register File Write enabled.
 
 
-        --generate common signals to all shift operations
-            cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-11) <= "10"; --bits 4,3 of ALU control signal select shifter in the output mux within the ALU.
+          --generate common signals to all shift operations
+          cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-11) <= "10"; --bits 4,3 of ALU control signal select shifter in the output mux within the ALU.
 
-        --now look at bits 27,26 of IR (bits 1,0 of IR_opcode) for exact instruction and generate specific signals.
+          --now look at bits 27,26 of IR (bits 1,0 of IR_opcode) for exact instruction and generate specific signals.
 
-        case IR_opcode(1 downto 0) is
-        when "00" => -- SLLI (Shift Left Logical - immediate)
-                        cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-12 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "111"; --Logical; Shift; Left
-        when "01" => -- NOP (?? if NOP is implemented like a 0-bits shift, isn't it possible that a NOP causes a stall due to a RAW hazard? maybe it's the COMPILER's responsibility *wink* to choose a register != from the destination register of the previous instruction.)
-                        cw <= NOP_SIGNALS; --TODO: implement as shift if necessary.
-        when "10" => -- SRLI (Shift Right Logical - immediate)
-                        cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-12 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "110"; --Logical; Shift; Right
-        when "11" => -- SRAI (Shift Right Arithmetic - immediate)
-                        cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-12 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "010"; --Arithmetic; Shift; Right
-        when others => cw <= NOP_SIGNALS; --instruction is not recognized, fall back to NOP.
-            end case;
+          case IR_opcode(1 downto 0) is
+          when "00" => -- SLLI (Shift Left Logical - immediate)
+                       cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-12 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "111"; --Logical; Shift; Left
+                       PRINT(DEBUG_MODE, "SLLI  ", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+          when "01" => -- NOP (?? if NOP is implemented like a 0-bits shift, isn't it possible that a NOP causes a stall due to a RAW hazard? maybe it's the COMPILER's responsibility *wink* to choose a register != from the destination register of the previous instruction.)
+                       cw <= NOP_SIGNALS; --TODO: implement as shift if necessary.
+                       PRINT(DEBUG_MODE, "NOP   ", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+          when "10" => -- SRLI (Shift Right Logical - immediate)
+                       cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-12 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "110"; --Logical; Shift; Right
+                       PRINT(DEBUG_MODE, "SRLI  ", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+          when "11" => -- SRAI (Shift Right Arithmetic - immediate)
+                       cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-12 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "010"; --Arithmetic; Shift; Right
+                       PRINT(DEBUG_MODE, "SRAI  ", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+          when others => cw <= NOP_SIGNALS; --instruction is not recognized, fall back to NOP.
+                         PRINT(DEBUG_MODE, "??????", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+
+          end case;
 
       --elsif(ir(xx downto yy) = zzzz) then --LOAD/STORE (TODO, see below.)
       --
@@ -489,24 +545,29 @@ begin  -- dlx_cu_hw architecture
 
                                     cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "10"; --select output of adder/subtractor, request addition
                                     cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= '1';                                            --signed.
+                                    PRINT(DEBUG_MODE, "ADDI  ", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+
                                     
                         when "01" => --ADDUI
 
                                     cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "10"; --select output of adder/subtractor, request addition
                                     cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= '0';                                            --unsigned.
-                                    
+                                    PRINT(DEBUG_MODE, "ADDUI ", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+
                         when "10" => --SUBI
 
                                     cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "11"; --select output of adder/subtractor, request subtraction
                                     cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= '1';                                            --signed.
-                                    
+                                    PRINT(DEBUG_MODE, "SUBI  ", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+
                         when "11" => --SUBUI
                                     
                                     cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "11"; --select output of adder/subtractor, request subtraction
                                     cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= '0';                                            --unsigned.
-
+                                    PRINT(DEBUG_MODE, "SUBUI ", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
                         when others =>
-                                    cw <= NOP_SIGNALS;
+                                    cw <= NOP_SIGNALS; --instruction is not recognized, fall back to NOP.
+                                    PRINT(DEBUG_MODE, "??????", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
 
                         end case;
 
@@ -519,32 +580,40 @@ begin  -- dlx_cu_hw architecture
                         when "00" => --ANDI
                                     cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9) <= '0'; -- pre-select Logic unit: bit 5 of ALU control signals can pre-select within ALU between LH output and logic unit output; set it to zero (logic unit).
                                     cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "01"; --select AND
+                                    PRINT(DEBUG_MODE, "ANDI  ", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
 
                         when "01" => --ORI
                                     cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9) <= '0'; -- pre-select Logic unit: bit 5 of ALU control signals can pre-select within ALU between LH output and logic unit output; set it to zero (logic unit).
                                     cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "00"; --select OR
+                                    PRINT(DEBUG_MODE, "ORI   ", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+
 
                         when "10" => --XORI
                                     cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9) <= '0'; -- pre-select Logic unit: bit 5 of ALU control signals can pre-select within ALU between LH output and logic unit output; set it to zero (logic unit).
                                     cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "10"; --select XOR
+                                    PRINT(DEBUG_MODE, "XORI  ", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
 
                         when "11" => --LHI
                                     cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-9) <= '1'; -- pre-select LH unit: bit 5 of ALU control signals can pre-select within ALU between LH output and logic unit output; set it to one (LH unit).
                                     --nothing else to do here; LH block doesn't need any configuration - it just outputs the only possible result.
-                                    
+                                    PRINT(DEBUG_MODE, "LHI   ", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+
                         when others =>
-                                    cw <= NOP_SIGNALS;
+                                    cw <= NOP_SIGNALS; --instruction is not recognized, fall back to NOP.
+                                    PRINT(DEBUG_MODE, "??????", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
                         end case;
                         
                         
             when others =>
-                        cw <= NOP_SIGNALS;
-                        
+                        cw <= NOP_SIGNALS; --instruction is not recognized, fall back to NOP.
+                        PRINT(DEBUG_MODE, "??????", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+
                         
             end case;
 
       else
            cw <= NOP_SIGNALS; --instruction is not recognized, fall back to NOP. -- TODO: first handle any other instruction types? (any instructions that can't be recognized using one of the above patterns.)
+           PRINT(DEBUG_MODE, "??????", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
 
       end if;
     end if;
