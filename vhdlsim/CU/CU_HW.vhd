@@ -542,22 +542,45 @@ begin  -- dlx_cu_hw architecture
           --look at bit 29 of IR (bit 3 of IR_opcode) to see whether it is a load instruction or a store instruction, and generate common signals:
           case IR_opcode(3) is
 
-          when '0' => --instruction is a load: activate read from Data Memory + enable LMD output latch register + configure LB/LH/SIGN_MEM depending on specific instruction, configure S3 and WF1 for writeback from datamem to register file.
+          when '0' => --instruction is a load: activate read from Data Memory + enable LMD output latch register, configure S3 and WF1 for writeback from datamem to register file.
 
-              --(TODO:)generate signals common to all load instructions:
+              --generate signals common to all load instructions:
+              cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 0) <= '1';  --activate read from Data Memory (the value pointed to by the ALU result will be read)
+              cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 3) <= '1'   --enable LMD output latch register
+              cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE - 0) <= '0'; --configure S3 to pass output from Data Memory;
+              cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE - 1) <= '1'; --activate Write on regfile (the value read bt Data Memory will be written to the register specified by the RD field of the instruction.)
 
-              --now look at bits 28,27,26 of IR (bits 2,1,0 of IR_opcode) for exact Store instruction and generate specific signals.
+              --now look at bits 28,27,26 of IR (bits 2,1,0 of IR_opcode) for exact Load instruction and generate specific signals (= configure LB/LH/SIGN_MEM depending on specific instruction).
               case IR_opcode(2 downto 0) is
 
-              when "011" => --LW(TODO)
+              when "000" => --LB
+                           cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 4 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 5) <= "11"; --load Byte
+                           cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 6) <= '1'; --signed extension (to Word size) of the read value
+                           PRINT(DEBUG_MODE, "LB    ", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
 
+              when "001" => --LH
+                           cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 4 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 5) <= "10"; --load Half-word
+                           cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 6) <= '1'; --signed extension (to Word size) of the read value
+                           PRINT(DEBUG_MODE, "LH    ", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
 
-              when "001" => --LH(TODO)
+              when "011" => --LW
+                           cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 4 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 5) <= "00"; --load Word
+                           PRINT(DEBUG_MODE, "LW    ", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
 
-
-              when "000" => --LB(TODO)
-
-
+              when "100" => --LBU
+                           cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 4 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 5) <= "11"; --load Byte
+                           cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 6) <= '0'; --unsigned extension (to Word size) of the read value
+                           PRINT(DEBUG_MODE, "LBU    ", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+                           
+              when "101" => --LHU
+                           cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 4 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 5) <= "10"; --load Half-word
+                           cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 6) <= '0'; --unsigned extension (to Word size) of the read value
+                           PRINT(DEBUG_MODE, "LHU    ", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+                           
+              --when "110" => --LF(floating point not implemented)
+                       
+              --when "111" => --LD(double precision not implemented)
+                               
               when others => 
                            cw <= NOP_SIGNALS; --instruction is not recognized, fall back to NOP.
                            PRINT(DEBUG_MODE, "??????", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
