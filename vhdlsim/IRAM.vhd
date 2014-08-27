@@ -3,6 +3,7 @@ use ieee.std_logic_1164.all;
 use ieee.std_logic_arith.all;
 use std.textio.all;
 use ieee.std_logic_textio.all;
+use work.opcodes.all;
 
 use work.myTypes.all;
 use work.ceillog.all;
@@ -16,7 +17,7 @@ entity IRAM is
     I_SIZE : integer := 32);
   port (
     Rst  : in  std_logic;
-    Addr : in  std_logic_vector(ceil_log2(RAM_DEPTH)-1 downto 0);
+    Addr : in  std_logic_vector(ceil_log2(RAM_DEPTH)+1 downto 0);
     Dout : out std_logic_vector(I_SIZE - 1 downto 0)
     );
 
@@ -26,7 +27,7 @@ architecture IRam_Beh of IRAM is
 
   type RAMtype is array (0 to RAM_DEPTH - 1) of integer;-- std_logic_vector(I_SIZE - 1 downto 0);
 
-  constant addr_top : integer := ceil_log2(RAM_DEPTH)-1;
+  constant addr_top : integer := ceil_log2(RAM_DEPTH)+1; -- 2 more bits will by set to 00
   signal IRAM_mem : RAMtype;
 
 begin  -- IRam_Bhe
@@ -47,6 +48,13 @@ begin  -- IRam_Bhe
         readline(mem_fp,file_line);
         hread(file_line,tmp_data_u);
         IRAM_mem(index) <= conv_integer(unsigned(tmp_data_u));       
+        index := index + 1;
+      end loop;
+      while(index /= RAM_DEPTH-1) loop
+        tmp_data_u(31 downto 26) := OPCODE_J; -- Jump -1 (+1=0) - stay in this position
+        tmp_data_u(25 downto 2) := (OTHERS => '1');
+        tmp_data_u(1 downto 0) := "00";
+        IRAM_mem(index) <= conv_integer(unsigned(tmp_data_u));
         index := index + 1;
       end loop;
     end if;
