@@ -546,7 +546,7 @@ begin  -- dlx_cu_hw architecture
 
               --generate signals common to all load instructions:
               cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 0) <= '1';  --activate read from Data Memory (the value pointed to by the ALU result will be read)
-              cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 3) <= '1'   --enable LMD output latch register
+              cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 3) <= '1';   --enable LMD output latch register
               cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE - 0) <= '0'; --configure S3 to pass output from Data Memory;
               cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE - 1) <= '1'; --activate Write on regfile (the value read bt Data Memory will be written to the register specified by the RD field of the instruction.)
 
