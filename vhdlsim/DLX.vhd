@@ -14,6 +14,7 @@ ARCHITECTURE structural OF DLX IS
   --SIGNALS OF THE DATAPATH
   signal RS1, RS2, RD, RS1_NCLK, RS2_NCLK, RD_FROM_IR, RD_NCLK, RDIMM, RDREG: REG_ADDRESS;
   signal IS_REGOP, IS_JAL: std_logic; -- This signal decides which is the location of RD into the instruction register
+  signal twozero: std_logic_vector(1 downto 0); -- I don't know why, but it seems VHDS can't leave OPEN part of a signal. I tried blabla(1 downto 0) => open and it complains..
   signal IMM_16, IMM_16_NCLK: std_logic_vector(15 downto 0);
   signal RF1, RF2, EN1, S1, S2: std_logic;
   signal SELECT_REGA, SELECT_REGB: std_logic_vector(1 downto 0);
@@ -38,10 +39,13 @@ BEGIN
   the_datapath: ENTITY work.DLX_DATAPATH     --TODO: right now signals IMM_16 and SIGN_EX enter the datapath, but they
   PORT MAP(
   CLK => CLK, RESET => RESET,
-  RS1 => RS1, RS2 => RS2, RD => RD, IMM_16 => IMM_16, PC => CURRENT_PC, RF1 => RF1, RF2 => RF2, R30_OUT => POUT, EN1 => EN1, -- RF stage
-  S1 => S1, S2 => S2, SELECT_REGA => SELECT_REGA, SELECT_REGB => SELECT_REGB, ALU => ALU, ALU_EXPORT => FALLBACK_ADDRESS_NCLK, EN2 => EN2, SIGN_EX => SIGN_EX, RA_OUT => RA_OUT, -- EX stage
+  RS1 => RS1, RS2 => RS2, RD => RD, IMM_16 => IMM_16, PC(31 downto 2) => CURRENT_PC(29 downto 0), PC(1 downto 0) => "00", -- Fetch stage uses truncated addresses, while instruction set uses long (aligned) addresses.
+  RF1 => RF1, RF2 => RF2, R30_OUT => POUT, EN1 => EN1, -- RF stage
+  S1 => S1, S2 => S2, SELECT_REGA => SELECT_REGA, SELECT_REGB => SELECT_REGB, ALU => ALU, ALU_EXPORT(31 downto 2) => FALLBACK_ADDRESS_NCLK(29 downto 0),  ALU_EXPORT(1 downto 0) => twozero, -- The last 2 bits will be 0 for sure, and fetch stage uses truncated addresses
+  EN2 => EN2, SIGN_EX => SIGN_EX, RA_OUT => RA_OUT, -- EX stage
   RM => RM, WM => WM, SIGN => SIGN, LH => LH, LB => LB, EN3 => EN3, MEMDATAIN => MEMDATAIN, MEMDATAOUT => MEMDATAOUT, MEMADDRESS => MEMADDRESS, S3 => S3, WF1 => WF1 -- MEM stage
   );
+  FALLBACK_ADDRESS_NCLK(31 downto 30) <= "00";
 
   RS1_NCLK <= FETCHED_INST(25 downto 21);
   RS2_NCLK <= FETCHED_INST(20 downto 16);
@@ -56,10 +60,10 @@ BEGIN
   GENERIC MAP(WIDTH => REG_ADDRESS_SIZE) PORT MAP(A => "11111", B => RD_FROM_IR, S => IS_JAL, Y => RD_NCLK);
 
   --Puts another delay in order to align register address to CU work ( NCLK is entering the CU, while it will enter the RF on the next clock cycle)
-  clk_rs1: ENTITY work.DELAY_BLOCK
-    GENERIC MAP(WIDTH => 5, NREGS => 1) PORT MAP(CLK => CLK, RESET => RESET, D => RS1_NCLK, Q => RS1);
-  clk_rs2: ENTITY work.DELAY_BLOCK
-    GENERIC MAP(WIDTH => 5, NREGS => 1) PORT MAP(CLK => CLK, RESET => RESET, D => RS2_NCLK, Q => RS2);
+  clk_rs1: ENTITY work.LATCH_GENERIC
+    GENERIC MAP(WIDTH => 5) PORT MAP(CLK => CLK, RESET => RESET, D => RS1_NCLK, Q => RS1);
+  clk_rs2: ENTITY work.LATCH_GENERIC
+    GENERIC MAP(WIDTH => 5) PORT MAP(CLK => CLK, RESET => RESET, D => RS2_NCLK, Q => RS2);
   clk_imm16: ENTITY work.DELAY_BLOCK
     GENERIC MAP(WIDTH => 16, NREGS => 1) PORT MAP(CLK => CLK, RESET => RESET, D => IMM_16_NCLK, Q => IMM_16);
   clk_rd: ENTITY work.DELAY_BLOCK
