@@ -196,15 +196,15 @@ BEGIN
   regBa: ENTITY work.REG_GENERIC
   GENERIC MAP(WIDTH => REGISTER_SIZE) PORT MAP(D => writeback_data, CK => CLK, RESET => RESET, Q => regBa_out);
 
-  pipe2me: ENTITY work.REG_GENERIC
-  GENERIC MAP(WIDTH => REGISTER_SIZE) PORT MAP(D => rightB_out, CK => CLK, RESET => RESET, Q => pipe2me_out);
+  pipe2me: ENTITY work.LATCH_GENERIC
+  GENERIC MAP(WIDTH => REGISTER_SIZE) PORT MAP(D => rightB_out, CLK => CLK, RESET => RESET, Q => pipe2me_out);
 
   pipe2rd2: ENTITY work.REG_GENERIC
   GENERIC MAP(WIDTH => REG_ADDRESS_SIZE) PORT MAP(D => pipe1rd1_out, CK => CLK, RESET => RESET, Q => pipe2rd2_out);
 
   MEMADDRESS <= pipe2aluout_out;
   MEMDATAIN <= pipe2me_out;
-  memory_out <= MEMDATAOUT;
+  --memory_out <= MEMDATAOUT;
 
   --This mux selects between ALU and memory. Timing is done as follows: clock edge for ALU input is taken by regO_out, while memory_out is already clocked.
   mem_alu_selector: ENTITY work.MUX21_GENERIC
