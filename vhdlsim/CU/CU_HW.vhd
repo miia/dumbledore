@@ -130,7 +130,7 @@ begin  -- dlx_cu_hw architecture
   SIGN_MEM   <= cw3_latched(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 6);
 
   -- control signals for stage 4 (WB)
-  S3  <= cw3_latched(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE - 0);
+  S3  <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE - 0);
   WF1 <= cw4(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE - 1);
 
   --------------------------------------------------------------------------------------------
