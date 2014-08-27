@@ -31,7 +31,7 @@ ARCHITECTURE STRUCTURAL OF FETCH_STAGE IS
   signal not_check_notgated, not_check, no_check_d: std_logic;
   signal set_wrong_force_notgated, set_wrong_force, set_wrong_force_d: std_logic;
   signal tobedelayed, to_pipe_2, delayed_tobechecked: std_logic_vector(2 downto 0);
-  signal rst_pipe_vector: std_logic_vector(0 downto 0);
+  signal rst_pipe: std_logic_vector(1 downto 0);
 
   signal bubble, nbubble, clk_bubblegated: std_logic;
   signal old_ir, real_ir: INSTRUCTION;
@@ -123,18 +123,29 @@ BEGIN
   clock_overwrite: ENTITY work.LATCH_GENERIC
   GENERIC MAP(WIDTH => 1) PORT MAP(CLK => CLK, RESET => RESET, D(0) => had_wrong_prediction_nclk, Q(0) => had_wrong_prediction);
 
-  flush_unit : ENTITY work.REG_GENERIC
+  --Keeps flushing for 3 clock cycles. Not that had_wrong_prediction is inverted here so that a reset will cause a pipeline flush.
+  flush_unit1 : ENTITY work.REG_GENERIC
     generic map(
 	  WIDTH => 1
 	)
 	port map(
-	  D(0) => had_wrong_prediction,
+	  D(0) => not had_wrong_prediction,
 		CK => CLK,
 		RESET => RESET,
-		Q => rst_pipe_vector
+		Q(0) => rst_pipe(0)
+	);
+  flush_unit2 : ENTITY work.REG_GENERIC
+    generic map(
+	  WIDTH => 1
+	)
+	port map(
+	  D(0) => rst_pipe(0),
+		CK => CLK,
+		RESET => RESET,
+		Q(0) => rst_pipe(1)
 	);
 
-  FLUSH_PIPELINE <= rst_pipe_vector(0) or had_wrong_prediction; -- Both are active high and produce an active high
+  FLUSH_PIPELINE <= (not rst_pipe(1)) or (not rst_pipe(0)) or had_wrong_prediction; -- Both are active high and produce an active high
 
   ---------------------------------------------------------------------------------------------------------------------
   -- Pipeline stall/support
