@@ -29,9 +29,43 @@ j stall;
 ;
 ;This procedure accepts central and x in R15 and R16, and returns error in R17.
 error:
-;Saves R14 in memory (push equivalent?)
-  sw 0(r0), R15;
-  mult R15, R15, R15;
-  sub R17, R16, R15;
-  lw R15, 0(r0);
+  ;Saves R20 in memory (push equivalent?)
+  sw 0(r0), R20;
+
+  ;Saves R31 to return, and calls square
+  sw 4(r0), R31;
+  jal square;
+  lw R31, 4(r0);
+
+  sub R17, R16, R20;
+  lw R20, 0(r0);
   jr R31; RET equivalent
+
+;This procedure computes the square of R15 into R20
+square:
+  ;R1=counter (0-31)
+  ;Backup R1, R17 and R16
+  sw 8(r0), R1;
+  sw 12(r0), R16;
+  sw 16(r0), R17;
+
+  addi R1, R0, 32;
+  add R16, R15, R0;
+  xor R20, R20, R20;
+
+sq_for:
+  subi R1, R1, 1;
+  ;Takes the MSB of R16 into R17 -- It seems that this assembler only supports decimal numbers -.-"
+  andi R17, R16, 2147483648;
+  srai R17, R17, 31 ; -- So we obtain a mask of 111..11 or 000..00
+  andi R17, R17, R15; -- Decide wether to add 0 or A
+  add R20, R20, R17;
+
+  bnez R1, sq_for;
+
+  ;Restore values
+  lw R1, 8(r0);
+  lw R16, 12(r0);
+  lw R17, 16(r0);
+  jr R31; --Return.
+
