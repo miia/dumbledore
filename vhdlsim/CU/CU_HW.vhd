@@ -76,7 +76,7 @@ architecture CU_HW of DLX_CU is
   --signal cw0 : std_logic_vector(CW_SIZE-1 downto 0);         -- all 20 control signals; a part (CW_IF_SIZE) will go to stage zero (IF), the rest (17) will go to the next pipeline register
   signal cw1, cw1_latched : std_logic_vector(CW_SIZE-1-CW_IF_SIZE downto 0);       -- 17 control signals; a part (CW_ID_SIZE) will go to stage one (ID), the rest (14) will go to the next pipeline register
   signal cw2, cw1_or_nop : std_logic_vector(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE downto 0);     -- 14 control signals; a part (CW_EX_SIZE) will go to stage two (EX), the rest (9) will go to the next pipeline register
-  signal cw3 : std_logic_vector(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE downto 0);   -- 9 control signals; a part (CW_MEM_SIZE) will go to stage three (MEM), the rest (2) will go to the next pipeline register
+  signal cw3, cw3_latched : std_logic_vector(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE downto 0);   -- 9 control signals; a part (CW_MEM_SIZE) will go to stage three (MEM), the rest (2) will go to the next pipeline register
   signal cw4 : std_logic_vector(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE downto 0); -- 2 control signals (CW_WB_SIZE), which go directly to the last pipeline stage (WB)
 
 
@@ -120,17 +120,17 @@ begin  -- dlx_cu_hw architecture
   EN2 <= cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 16);
 
   -- control signals for stage 3 (MEM)
-  RM  <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 0);
-  WM  <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 1);
-  EN3 <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 2);
+  RM  <= cw3_latched(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 0);
+  WM  <= cw3_latched(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 1);
+  EN3 <= cw3_latched(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 2);
 
-  EN_LMD     <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 3);
-  LH         <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 4);
-  LB         <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 5);
-  SIGN_MEM   <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 6);
+  EN_LMD     <= cw3_latched(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 3);
+  LH         <= cw3_latched(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 4);
+  LB         <= cw3_latched(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 5);
+  SIGN_MEM   <= cw3_latched(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 6);
 
   -- control signals for stage 4 (WB)
-  S3  <= cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE - 0);
+  S3  <= cw3_latched(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE - 0);
   WF1 <= cw4(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE - 1);
 
   --------------------------------------------------------------------------------------------
@@ -149,6 +149,8 @@ begin  -- dlx_cu_hw architecture
   -- CW4 will be latched instead of flip-flop'd to respect setup time of register file. Cw1 is doubled because flip-flop'd cw1 must go into cw pipe (cw2)
   cw1_latch: ENTITY work.LATCH_GENERIC
   GENERIC MAP(WIDTH => CW_SIZE-CW_IF_SIZE) PORT MAP(CLK => CLK, RESET => RST, D => cw(CW_SIZE-1-CW_IF_SIZE downto 0), Q => cw1_latched);
+  cw3_latch : ENTITY work.LATCH_GENERIC
+  GENERIC MAP(WIDTH => CW_SIZE-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE) PORT MAP(CLK => CLK, RESET => RST, D => cw2(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE downto 0), Q => cw3_latched);
   cw4_latch: ENTITY work.LATCH_GENERIC
   GENERIC MAP(WIDTH => CW_SIZE-CW_IF_SIZE-CW_ID_SIZE -CW_EX_SIZE-CW_MEM_SIZE)
   PORT MAP(CLK => CLK, RESET => RST, D => cw3(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE downto 0), Q => cw4);
@@ -589,7 +591,7 @@ begin  -- dlx_cu_hw architecture
           when '1' => --instruction is a store: select regB as rightB_out (will go to DataMem input as the value to be stored), activate write on Data Memory. (no need to configure LMD register, load signals, or writeback signals.)
 
               --generate signals common to all store instructions:
-              cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 4 downto CW_SIZE-1 - 5) <= "01"; --select regB as rightB_out (will go to DataMem input as the value to be stored)
+              cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 4 downto CW_SIZE-1 -CW_IF_SIZE-CW_ID_SIZE- 5) <= "01"; --select regB as rightB_out (will go to DataMem input as the value to be stored)
               cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 1) <= '1';  --activate write on Data Memory (so that the value carried by rightB_out will be written on the address computed by the ALU.)
 
               --now look at bits 28,27,26 of IR (bits 2,1,0 of IR_opcode) for exact Store instruction and generate specific signals.

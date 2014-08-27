@@ -185,8 +185,8 @@ BEGIN
   --EXEC PIPES
   --Note/TODO: it should be smart to attach alu B operand to memory data input so that we can store immediates
 
-  pipe2aluout: ENTITY work.REG_GENERIC
-  GENERIC MAP(WIDTH => REGISTER_SIZE) PORT MAP(D => ALU_OUT, CK => CLK, RESET => RESET, Q => pipe2aluout_out);
+  pipe2aluout: ENTITY work.LATCH_GENERIC
+  GENERIC MAP(WIDTH => REGISTER_SIZE) PORT MAP(D => ALU_OUT, CLK => CLK, RESET => RESET, Q => pipe2aluout_out);
 
   --This registers store ALU OUT from the previous operations, and are used for data forwarding through the pipeline.
   -- Note that pipe2aluout is doubled here to regO; this is because pipe2aluout will be changed to a LATCH instead of a register, but a latch CAN'T be used for this purpose as it could introduce an infinite loop if regO is read (and written) from the ALU in transparent mode.
@@ -206,8 +206,9 @@ BEGIN
   MEMDATAIN <= pipe2me_out;
   memory_out <= MEMDATAOUT;
 
+  --This mux selects between ALU and memory. Timing is done as follows: clock edge for ALU input is taken by regO_out, while memory_out is already clocked.
   mem_alu_selector: ENTITY work.MUX21_GENERIC
-  GENERIC MAP(WIDTH => REGISTER_SIZE) PORT MAP(A=>pipe2aluout_out, B=> memory_out, S=> S3, Y=> writeback_data);
+  GENERIC MAP(WIDTH => REGISTER_SIZE) PORT MAP(A=>regO_out, B=> memory_out, S=> S3, Y=> writeback_data);
 
   --MEM/WB PIPES - What is "OUT" needed to?
   --MEM/WB STAGE
