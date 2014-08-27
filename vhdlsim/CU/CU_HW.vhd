@@ -430,7 +430,7 @@ begin  -- dlx_cu_hw architecture
                       -- NOTE: in the case of BEZ or BNEZ, the ALU is in charge of computing the fallback address (which will then go from the ALU output to the Branch Unit);
                       -- in BOTH cases (bez or bnez), the activation signals will be exactly the same!!
                       -- but the CU needs to do 2 things:
-                      -- 1) compute the fallback address (whose formula depends on the prediction that the BPU had performed earlier in the fetch stage: either fallback <= PC if predicted taken, or fallback <= PC+Immediate otherwise)
+                      -- 1) compute the fallback address (whose formula depends on the prediction that the BPU had performed earlier in the fetch stage: either fallback <= PC+4 if predicted taken, or fallback <= PC+4+Immediate otherwise). To compute imm+PC+4 (as PC is truncated - last 2 bits are implicit), we compute imm-((not PC) & 11)
                       -- 2) send the register to be checked along the rightA_out signal (because the Branch Unit will check its value and decide whether it should jump to the fallback address + flush the pipeline).
 
 
@@ -447,7 +447,7 @@ begin  -- dlx_cu_hw architecture
                       cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE - 0) <= '1';   --pass PC value into ALU from muxA (always needed to compute the Fallback address);
                       --cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-16) <= '1';  --enable ALU output register TODO: not needed, right?
 
-                      cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "10"; -- ALU configuration: select output from adder/subtractor, request addition
+                      cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "11"; -- ALU configuration: select output from adder/subtractor, request subtraction
 
 
                       case PRED is -- Note that the prediction entering the CU is actually inverted - the fetch stage informs the cu of what prediction *THE CU* shall compute (i.e. the wrong one)

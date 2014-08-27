@@ -66,8 +66,10 @@ BEGIN
       SELECT_RIGHTA <= "01"; -- Keeps the read register as the good one
     end if;
 
-    --Same thing for mux B
-    if(SB=D1 and ir_was_notwriting='1') then
+    --Same thing for mux B, but a branch will select -1 as content
+    if(IR(31 downto 28)="0001") then 
+      SELECT_RIGHTB <= "00";
+    elsif(SB=D1 and ir_was_notwriting='1') then
       SELECT_RIGHTB <= "10";
     elsif(SB=D2 and ir_was_notwriting2='1') then
       SELECT_RIGHTB <= "11";

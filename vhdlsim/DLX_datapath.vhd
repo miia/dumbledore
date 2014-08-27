@@ -61,7 +61,7 @@ ARCHITECTURE dlx_simple OF DLX_DATAPATH IS
   signal ALU_A, ALU_B, ALU_OUT, pipe2aluout_out, pipe2me_out, writeback_data: REGISTER_CONTENT;-- Data input for ALU
   signal regO_out, regBa_out, rightA_out, rightB_out: REGISTER_CONTENT;-- Data input for ALU
   signal input_for_right_a, input_for_right_b: mux_generic_input(3 downto 0, REGISTER_SIZE-1 downto 0);
-  signal imm_extender_out: REGISTER_CONTENT;
+  signal imm_extender_out, minusfour: REGISTER_CONTENT;
   
   signal pc_value : std_logic_vector(31 downto 0); -- carries current PC value out of fetch stage and into the ALU. (32 = width of Accumulator in fetch_stage)
   
@@ -115,6 +115,7 @@ BEGIN
 
   --This should be a std_logic_vector assignment, no comment
   --Selection is driven from outside: 0 is "0000", 1 is real register, 2 is input from regO, 3 is regBa
+  minusfour<=(REGISTER_SIZE-1 downto 2 => '1', 1 downto 0 => '0'); -- -4: to be used for PC overwrite
   assign_values: for i in 0 to REGISTER_SIZE-1 generate
 
     input_for_right_a(0,i)<='0';
@@ -122,7 +123,7 @@ BEGIN
     input_for_right_a(2,i)<=regO_out(i);
     input_for_right_a(3,i)<=regBa_out(i);
 
-    input_for_right_b(0,i)<='0';
+    input_for_right_b(0,i) <= minusfour(i);
     input_for_right_b(1,i)<=pipe1b_out(i); --coming from RF output (will be regB operand for ALU)
     input_for_right_b(2,i)<=regO_out(i);
     input_for_right_b(3,i)<=regBa_out(i);
