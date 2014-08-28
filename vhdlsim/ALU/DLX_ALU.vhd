@@ -39,7 +39,7 @@ begin
 
   arithUnit: ENTITY work.ARITHMETIC_UNIT
   GENERIC MAP(WIDTH => REGISTER_SIZE) PORT MAP(
-  A => A_in, B => B_in, OP => OP(1 downto 0), Y => intout, Y_extended => Y_extended, Cout => FLAGS(0));
+  A => A_in, B => B_in, OP => OP(2 downto 0), Y => intout, Y_extended => Y_extended, Cout => FLAGS(0));
 
   logicUnit: ENTITY work.LOGIC_UNIT
   GENERIC MAP (N => REGISTER_SIZE) PORT MAP(A => A_in, B => B_in, FUNC => OP(1 downto 0), Y => logicout);

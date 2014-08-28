@@ -26,7 +26,7 @@ END FETCH_STAGE;
 
 ARCHITECTURE STRUCTURAL OF FETCH_STAGE IS
   signal the_pc:  CODE_ADDRESS;
-  signal the_prediction, had_wrong_prediction, had_wrong_prediction_nclk: std_logic;
+  signal the_prediction, had_wrong_prediction, nhad_wrong_prediction, had_wrong_prediction_nclk: std_logic;
   signal flags_tocheck, flags_tocheck_d: std_logic;
   signal not_check_notgated, not_check, no_check_d: std_logic;
   signal set_wrong_force_notgated, set_wrong_force, set_wrong_force_d: std_logic;
@@ -124,12 +124,13 @@ BEGIN
   GENERIC MAP(WIDTH => 1) PORT MAP(CLK => CLK, RESET => RESET, D(0) => had_wrong_prediction_nclk, Q(0) => had_wrong_prediction);
 
   --Keeps flushing for 3 clock cycles. Not that had_wrong_prediction is inverted here so that a reset will cause a pipeline flush.
+  nhad_wrong_prediction <= not had_wrong_prediction;
   flush_unit1 : ENTITY work.REG_GENERIC
     generic map(
 	  WIDTH => 1
 	)
 	port map(
-	  D(0) => not had_wrong_prediction,
+	  D(0) => nhad_wrong_prediction,
 		CK => CLK,
 		RESET => RESET,
 		Q(0) => rst_pipe(0)
@@ -171,7 +172,7 @@ BEGIN
   --Don't make predictions if there's a bubble
   not_check <= not_check_notgated or (not bubble);
   --Never force wrong if there is a bubble
-  set_wrong_force <= set_wrong_force_notgated and (not bubble);
+  set_wrong_force <= set_wrong_force_notgated and (bubble);
   ---------------------------------------------------------------------------------------------------------------------
 
 end ARCHITECTURE;

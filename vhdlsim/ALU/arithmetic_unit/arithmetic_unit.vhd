@@ -9,7 +9,7 @@ ENTITY ARITHMETIC_UNIT IS
 PORT(
   A: in std_logic_vector(WIDTH-1 downto 0);
   B: in std_logic_vector(WIDTH-1 downto 0);
-  OP: in std_logic_vector(1 downto 0);
+  OP: in std_logic_vector(2 downto 0);
   Cout:  out std_logic;
   Y: out std_logic_vector(WIDTH-1 downto 0);
   Y_extended: out std_logic_vector(WIDTH-1 downto 0)
@@ -19,6 +19,7 @@ END ARITHMETIC_UNIT;
 ARCHITECTURE structural OF ARITHMETIC_UNIT is
   signal addout, mulout, B_negated, B_sign: std_logic_vector(WIDTH-1 downto 0);
   signal mullongout: std_logic_vector(2*WIDTH-1 downto 0);
+  signal Y_result: std_logic_vector(WIDTH-1 downto 0);
 BEGIN
   --Manages difference between ADD and SUB
   --Last bit of OP makes difference in add/sub: if 1, Cin=1 and B=~B
@@ -39,7 +40,10 @@ BEGIN
 
   resultmux: ENTITY work.MUX21_GENERIC
   GENERIC MAP(WIDTH => WIDTH)
-  PORT MAP(A => addout, B => mulout, S => OP(1), Y => Y);
+  PORT MAP(A => addout, B => mulout, S => OP(1), Y => Y_result);
+  bypassmux: ENTITY work.MUX21_GENERIC
+  GENERIC MAP(WIDTH => WIDTH)
+  PORT MAP(A => A, B => Y_result, S => OP(2), Y => Y);
 
 END ARCHITECTURE;
 
