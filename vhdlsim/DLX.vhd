@@ -90,7 +90,7 @@ BEGIN
   GENERIC MAP(WIDTH => 1) PORT MAP(CK => CLK, RESET => RESET, D(0) => NOT_JMP_TAKEN_NCLK, Q(0) => NOT_JMP_TAKEN);
   
   the_code_memory: ENTITY work.IRAM
-  PORT MAP(Rst => RESET, Addr => RDADDR(7 downto 0), Dout => INST);
+  PORT MAP(Rst => RESET, Addr => RDADDR(9 downto 0), Dout => INST);
       
 
   the_CU: ENTITY work.DLX_CU(CU_HW)

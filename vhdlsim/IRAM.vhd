@@ -13,7 +13,7 @@ use work.ceillog.all;
 -- file name is "test.asm.mem"
 entity IRAM is
   generic (
-    RAM_DEPTH : integer := 48;
+    RAM_DEPTH : integer := 250;
     I_SIZE : integer := 32);
   port (
     Rst  : in  std_logic;
