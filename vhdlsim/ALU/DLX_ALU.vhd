@@ -48,7 +48,7 @@ begin
   GENERIC MAP(WIDTH => REGISTER_SIZE/2) PORT MAP(A => B_in(REGISTER_SIZE/2-1 downto 0), Y => lhout);
 
   --Selects between NOT and LH based on immediate type -- Bit 5 of operation, but only when op is xx11
-  mustchangetolh <= OP(5) and OP(1) and OP(0);
+  mustchangetolh <= OP(5);
   
   logiclhselector: ENTITY work.MUX21_GENERIC
   GENERIC MAP(WIDTH => REGISTER_SIZE) PORT MAP(A => lhout, B => logicout, S => mustchangetolh, Y => logiclhout);
