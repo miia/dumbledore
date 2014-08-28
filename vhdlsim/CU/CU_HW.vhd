@@ -572,12 +572,12 @@ begin  -- dlx_cu_hw architecture
               when "100" => --LBU
                            cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 4 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 5) <= "11"; --load Byte
                            cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 6) <= '0'; --unsigned extension (to Word size) of the read value
-                           PRINT(DEBUG_MODE, "LBU    ", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+                           PRINT(DEBUG_MODE, "LBU   ", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
                            
               when "101" => --LHU
                            cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 4 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 5) <= "10"; --load Half-word
                            cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE - 6) <= '0'; --unsigned extension (to Word size) of the read value
-                           PRINT(DEBUG_MODE, "LHU    ", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
+                           PRINT(DEBUG_MODE, "LHU   ", DEBUG);  -- content of PRINT procedure gets completely ignored if DEBUG_MODE=false (see procedure body)
                            
               --when "110" => --LF(floating point not implemented)
                        
