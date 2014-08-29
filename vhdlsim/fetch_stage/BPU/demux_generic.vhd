@@ -22,8 +22,8 @@ entity DEMUX_GENERIC is
         HEIGHT: integer:=2 -- number of signals
 		);
 	Port (	
-        A:	in	std_logic_vector(WIDTH-1 DOWNTO 0)
-		S:	in	std_logic_vector(ceil_log2(HEIGHT)-1 downto 0);
+        A:	in	std_logic_vector(WIDTH-1 DOWNTO 0)  --WIDTH-bits input
+		S:	in	std_logic_vector(ceil_log2(HEIGHT)-1 downto 0);   --selection signal (ceil(log2(HEIGHT)) bits wide)
         Y:	out demux_generic_output(HEIGHT-1 downto 0, WIDTH-1 downto 0); --just ONE of these WIDTH-1 wide outputs will be driven at a time; the others will be pulled down to 0.
 	);
 end DEMUX_GENERIC;
