@@ -48,8 +48,7 @@ BEGIN
                                     --because that's when the actual branch result will come back to update the status register of the corresponding BHT row.
                                     --this will turn to '1' to enable the selected state register's EN input.
 
-  which_row <= ADDR(ceil_log2(BHT_ROWS)-1 downto 0);  --take as input the first k bits of the Branch instruction's address in IRAM.
-                                                      --TODO: NEED TO HAVE THE ADDRESS OF CURRENT BRANCH INSTRUCTION as input!! (taken from current PC maybe?)
+  which_row <= PC(ceil_log2(BHT_ROWS)-1 downto 0);  --take as input the first k bits of the Branch instruction's address in IRAM (which is the current value of the PC).
 
 
   demux0: entity work.DEMUX_GENERIC 
