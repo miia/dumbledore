@@ -68,10 +68,11 @@ BEGIN
 		OVERWRITE => had_wrong_prediction,
 		Y => the_pc);
 
-  my_bpu: entity work.BPU(structural_nottaken) 
+  my_bpu: entity work.BPU(structural_bht) 
   PORT MAP(
     PC => the_pc,
     CLK => CLK,
+    RESET <= RESET,
     OPCODE => opcodeof(INST),
     PRED => the_prediction,
     NO_CHECK => not_check_notgated,
