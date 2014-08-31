@@ -33,18 +33,23 @@ END FORWARDER;
 
 ARCHITECTURE STRUCTURAL OF FORWARDER IS
   SIGNAL D2, D1, SA, SB, D: REG_ADDRESS;
-  SIGNAL ir_is_rtype: std_logic;
+  SIGNAL ir_is_rtype, ir_is_jal: std_logic;
   SIGNAL ir_is_notwriting, ir_was_notwriting, ir_was_notwriting2: std_logic;
+  SIGNAL d_itype: REG_ADDRESS;
 BEGIN
   --Takes informations about the current instruction in order to execute it 
   ir_is_rtype <= '1' when opcodeof(IR)=OPCODE_RTYPE else '0';
   --If the instruction is a notwriting, the destination register has another purpose -> IGNORE IT!
   ir_is_notwriting <= '0' when does_not_write(opcodeof(IR)) else '1'; -- This value is active-low so that upon a reset the instructions will not be touched
+  --A JAL has implicit R31 as destination register
+  ir_is_jal <= '1' when opcodeof(IR)=OPCODE_JAL or opcodeof(IR)=OPCODE_JALR else '0';
+  select_jal: ENTITY work.MUX21_GENERIC
+  GENERIC MAP(WIDTH => REG_ADDRESS_SIZE) PORT MAP(A => "11111", B => r2of(IR), S => ir_is_jal, Y => d_itype);
 
   SA <= r1of(IR);
   SB <= r2of(IR);
   select_dest: ENTITY work.MUX21_GENERIC
-  GENERIC MAP(WIDTH => REG_ADDRESS_SIZE) PORT MAP(A => r3of(IR), B => r2of(IR), S => ir_is_rtype, Y => D); -- Selects the destination of this operation
+  GENERIC MAP(WIDTH => REG_ADDRESS_SIZE) PORT MAP(A => r3of(IR), B => d_itype, S => ir_is_rtype, Y => D); -- Selects the destination of this operation
 
   previous_operation: ENTITY work.REG_GENERIC
   GENERIC MAP(WIDTH => REG_ADDRESS_SIZE) PORT MAP(D => D, CK => CLK, RESET => RESET, Q => D1);
