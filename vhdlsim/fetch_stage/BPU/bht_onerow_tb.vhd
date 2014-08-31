@@ -15,6 +15,8 @@ BEGIN
   process
   begin
 
+      wait for 10 ns; --align input changes to rising edge of clock (not falling edge).
+
       rst <= '0';
       wait for 20*2 ns;
 
@@ -34,7 +36,13 @@ BEGIN
       wait for 20*2 ns; --take a couple of branches,
                         --and state should now be "10" (Weak Taken)
 
-      input <= '0';     --and now in just one clock cycle we can go back to Weak Not Taken (=output 0 again).
+      input <= '0';     --in one clock cycle we can go back to Weak Not Taken (=output "01" again).
+      wait for 20*1 ns;
+
+     input <= '1';     -- let it climb again (to "10")...
+     wait for 20*1 ns;
+
+      rst <= '0';       --...and finally reset state abruptly - should simply go to '00' asynchronously
       wait;
 
   end process;
