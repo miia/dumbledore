@@ -1,5 +1,5 @@
 ; Computes the square of 10 (100)
-addi R15, R0, 10;
+addi R15, R0, 13;
 jal square;
 addi R30, R20, 0;
 end:
@@ -14,7 +14,7 @@ square:
   sw 12(r0), R16;
   sw 16(r0), R17;
   sw 20(r0), R2;
-
+  ;-- It seems that this assembler only supports decimal numbers -.-"
   lhi R2, 32768 ;
   addi R1, R0, 32;
   add R16, R15, R0;
@@ -22,12 +22,12 @@ square:
 
 sq_for:
   subi R1, R1, 1;
-  ;Takes the MSB of R16 into R17 -- It seems that this assembler only supports decimal numbers -.-"
+  slli R20, R20, 1;
+  ;Takes the MSB of R16 into R17 
   and R17, R16, R2;
   srai R17, R17, 31 ; -- So we obtain a mask of 111..11 or 000..00
   and R17, R17, R15 ; -- Decide wether to add 0 or A
   add R20, R20, R17 ;
-  slli R20, R20, 1;
   slli R16, R16, 1;
 
 
