@@ -127,22 +127,24 @@ BEGIN
         PRED<='1';
         NO_CHECK <= '1';
         FORCE_WRONG <= '0';
+
       when "000100" | "000101" => 
-        --Conditioned jr
-        PRED<='0';
+        --Conditioned (BEQZ or BNEZ, respectively) - HERE we employ the BHT.
+        PRED<=bht_out(0);
         NO_CHECK <= '0';
         FORCE_WRONG <= '0';
+        pred_requested <= '1';   --in THIS case, warn the BHT that a prediction was taken out of its table (this "warning" will get to the BHT 2 cycles later, when it's time to update the BHT's content.)
+
       when "010010" | "010011" => 
         --Predict WRONG (jr)
         PRED<='0';
         NO_CHECK <= '0';
         FORCE_WRONG <= '1';
       when OTHERS =>
-        --EVERY other case (= branch instructions) - HERE we can employ the BHT.
-        PRED <= bht_out(0);
+        --EVERY other case (=not a jump/branch instruction) => prediction not necessary => set NO_CHECK to '1'.
+        PRED <= '0';
         NO_CHECK <= '1';
         FORCE_WRONG <= '0';
-        pred_requested <= '1';   --in THIS case, warn the BHT that a prediction was taken out of its table (this warning will get to the BHT 2 cycles later, when it's time to update the BHT's content.)
     end case;
   end process;
 END;
