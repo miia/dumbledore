@@ -1,7 +1,6 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use work.myTypes.all;
-use work.opcodes.all;
 
 package opcodes is
   constant OPCODE_RTYPE: CODE := "000000";
