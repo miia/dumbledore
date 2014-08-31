@@ -15,9 +15,9 @@ PORT(
   EN:     in std_logic; --state is allowed to change (state register gets updated) ONLY IF this signal is high
   RST:    in std_logic;
   INPUT:  in std_logic;
-  OUTPUT: out std_logic;
+  OUTPUT: out std_logic
 );
-END BPU;
+END bht_onerow;
 
 ARCHITECTURE structural OF work.bht_onerow is
 
@@ -47,7 +47,7 @@ BEGIN
     state_register: process(clk, rst)
     begin
 
-        if RESET='0' then -- active low reset 
+        if RST='0' then -- active low reset 
             current_state <= "00"; --return to "Strong Not Taken" state
         else
 

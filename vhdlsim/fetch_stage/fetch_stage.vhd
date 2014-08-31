@@ -30,7 +30,9 @@ ARCHITECTURE STRUCTURAL OF FETCH_STAGE IS
   signal flags_tocheck, flags_tocheck_d: std_logic;
   signal not_check_notgated, not_check, no_check_d: std_logic;
   signal set_wrong_force_notgated, set_wrong_force, set_wrong_force_d: std_logic;
-  signal tobedelayed, to_pipe_2, delayed_tobechecked: std_logic_vector(2 downto 0);
+  signal was_beqz, branch_outcome: std_logic;
+  signal tobedelayed, delayed_tobechecked: std_logic_vector(3 downto 0);
+  signal to_pipe_2: std_logic_vector(2 downto 0);
   signal rst_pipe: std_logic_vector(1 downto 0);
 
   signal bubble, nbubble, clk_bubblegated: std_logic;
@@ -72,10 +74,11 @@ BEGIN
   PORT MAP(
     PC => the_pc,
     CLK => CLK,
-    RESET <= RESET,
+    RESET => RESET,
     OPCODE => opcodeof(INST),
-    PRED => the_prediction,
+    BRANCH_OUTCOME => branch_outcome,
     NO_CHECK => not_check_notgated,
+    PRED => the_prediction,
     FORCE_WRONG => set_wrong_force_notgated
   );
 
@@ -86,12 +89,13 @@ BEGIN
   --In this processor, this is what to check: note that must check ZEROFLAG=1 iff (jz && pred) || (jnz && !pred) 
   flags_tocheck <= opcodeof(INST)(0) xor the_prediction;
 
+  tobedelayed(3) <= opcodeof(INST)(0);  --pipeline the bit that identifies BEQZ vs BNEZ; will be used later, when the register value to be checked is ready from the EX stage, to tell the BPU whether the branch was eventually taken or not.
   tobedelayed(2) <= set_wrong_force;
   tobedelayed(1) <= not not_check; --UGLY fix: temporarly transform not check to active-low, so that if register is resetted, first instruction will not be checked.
   tobedelayed(0) <= flags_tocheck;
   delay_predictions : ENTITY work.DELAY_BLOCK
     generic map(
-	  WIDTH => 3, NREGS => 3
+	  WIDTH => 4, NREGS => 3
 	)
 	port map(
 	  D => tobedelayed,
@@ -99,6 +103,7 @@ BEGIN
 		RESET => RESET,
 		Q => delayed_tobechecked
 	);
+  was_beqz <= delayed_tobechecked(3); --this is the delayed version of opcodeof(INST)(0).
   set_wrong_force_d <= delayed_tobechecked(2);
   no_check_d <= not delayed_tobechecked(1); -- See above
   flags_tocheck_d <= delayed_tobechecked(0);
@@ -148,6 +153,11 @@ BEGIN
 	);
 
   FLUSH_PIPELINE <= (not rst_pipe(1)) or (not rst_pipe(0)) or had_wrong_prediction; -- Both are active high and produce an active high
+
+
+
+  branch_outcome <= (was_beqz and reg_is_zero) or ((not was_beqz) and (not reg_is_zero)) ;  --jump has been taken if EITHER (bz && reg_is_zero), OR (bnz && !reg_is_zero)
+
 
   ---------------------------------------------------------------------------------------------------------------------
   -- Pipeline stall/support

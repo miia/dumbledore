@@ -9,13 +9,18 @@ END BPU_TB;
 ARCHITECTURE bahbievfb OF BPU_TB IS
   signal pc: CODE_ADDRESS := (OTHERS => '0');
   signal clk: std_logic := '0';
+  signal reset: std_logic := '0';
   signal opcode: CODE := (OTHERS => '0');
+  signal branch_outcome: std_logic;
   signal pred: std_logic;
+  signal no_check: std_logic;
+  signal force_wrong: std_logic;
+
 BEGIN
 
   clk <= not clk after 10 ns;
   pc <= std_logic_vector(unsigned(pc)+1) after 20 ns;
   opcode <= std_logic_vector(unsigned(opcode)+1) after 20 ns;
 
-  bpu_totest: ENTITY work.BPU PORT MAP(pc, clk, opcode, pred);
+  bpu_totest: ENTITY work.BPU PORT MAP(pc=>pc, clk=>clk, reset=>reset, opcode=>opcode, branch_outcome=>branch_outcome, pred=>pred, no_check=>no_check, force_wrong=>force_wrong);
 END ARCHITECTURE;

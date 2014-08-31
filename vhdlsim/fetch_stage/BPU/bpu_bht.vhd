@@ -3,10 +3,9 @@ use IEEE.std_logic_1164.all;
 use work.myTypes.all;
 
 --needed to declare a signal compatible with the output of the demultiplexer
-PACKAGE DEMUX_GENERIC_OUTPUT IS
-  TYPE demux_generic_output IS ARRAY (NATURAL RANGE <>, NATURAL RANGE <>) OF STD_LOGIC;
-END PACKAGE demux_generic_output;
 use WORK.DEMUX_GENERIC_OUTPUT.all;
+
+use WORK.MUX_GENERIC_INPUT.all;
 
 use WORK.ceillog.all;
 
@@ -21,12 +20,14 @@ signal time_to_update: std_logic;  --two cycles after any prediction, this signa
                                    --(concretely, this signal is used to enable the BHT row to change the value in the state register)
 
 signal which_row, which_row_1cyclelater, which_row_2cycleslater: std_logic_vector(ceil_log2(BHT_ROWS)-1 downto 0);
-signal pred_requested, pred_requested_1cyclelater, pred_requested_2cycleslater: std_logic_vector(ceil_log2(BHT_ROWS)-1 downto 0);
+signal pred_requested, pred_requested_1cyclelater, pred_requested_2cycleslater: std_logic;
 
 signal demux_input: std_logic_vector(1 downto 0);
 signal demux_outputs: demux_generic_output(BHT_ROWS-1 downto 0, 1 downto 0);
 
-signal bht_out: std_logic; --the BHT will output the currently selected prediction on this signal.
+signal bht_out: std_logic_vector(0 downto 0); --the BHT will output the currently selected prediction on this signal.
+
+signal mux_inputs:  mux_generic_input(BHT_ROWS-1 downto 0, 0 downto 0);
 
 BEGIN
 
@@ -54,12 +55,12 @@ BEGIN
   demux0: entity work.DEMUX_GENERIC 
   GENERIC MAP(
       WIDTH => 2,  --width of input/outputs: a hardwired '1' that goes to the selected state register's EN input, and the actual branch outcome (1 bit).
-      HEIGHT => BHT_ROWS;
+      HEIGHT => BHT_ROWS
   )
   PORT MAP(
       A => demux_input, 
       S => which_row_2cycleslater,
-      Y => demux_outputs;
+      Y => demux_outputs
   );
 
 
@@ -71,7 +72,7 @@ BEGIN
 
   generate_rows: for i in 0 to BHT_ROWS-1 generate
 
-      bht_row(i): entity work.BHT_ONEROW 
+      bht_row: entity work.BHT_ONEROW 
       PORT MAP(
           CLK => CLK,
           EN => demux_outputs(i, 1),
@@ -92,15 +93,15 @@ BEGIN
   mux0: entity work.MUX_GENERIC 
   GENERIC MAP(
       WIDTH => 1,  --width of inputs/output: just one bit for the branch prediction.
-      HEIGHT => BHT_ROWS;  --has one input for each BHT row (each one outputs its most updated prediction, mux selects the appropriate one for current request).
+      HEIGHT => BHT_ROWS  --has one input for each BHT row (each one outputs its most updated prediction, mux selects the appropriate one for current request).
   )
   PORT MAP(
       A => mux_inputs,  --TODO: i'm VERY afraid that i'll have to map a DEMUX_GENERIC_OUTPUT signal to a MUX_GENERIC_INPUT of the same size just to make it get into the multiplexer, despite them begin defined in the same exact way.
       S => which_row,
-      Y => bht_out;
+      Y => bht_out
   );
 
-  PRED <= bht_out; --sorry, but it's late. does this compile, or is it "bht_out <= PRED"?
+  --PRED <= bht_out(0); --NO, not directly. the bht_out signal whould be left as just the output of the mux, and THEN the process below will decide whether to take PRED from this signal, or just send '0' or '1' as PRED's value.
 
 
 
@@ -138,7 +139,7 @@ BEGIN
         FORCE_WRONG <= '1';
       when OTHERS =>
         --EVERY other case (= branch instructions) - HERE we can employ the BHT.
-        PRED <= bht_out;
+        PRED <= bht_out(0);
         NO_CHECK <= '1';
         FORCE_WRONG <= '0';
         pred_requested <= '1';   --in THIS case, warn the BHT that a prediction was taken out of its table (this warning will get to the BHT 2 cycles later, when it's time to update the BHT's content.)
