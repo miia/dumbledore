@@ -41,7 +41,7 @@ begin
 
    output(N-1 downto 1) <= (others=>'0'); --all output bits except the LSB are hardwired to zero.
 
-	COMP: process (INPUT, WHAT_TO_CHECK) is
+	COMP: process (WHAT_TO_CHECK, msb, zero) is
 	begin
 		case WHAT_TO_CHECK is
 		when  "000"  =>  output(0) <= msb;               -- A <  B
