@@ -31,7 +31,7 @@ end package;
 package body opcodes is
   function does_not_write(opcode: CODE) return boolean is
   begin
-    if(OPCODE(5 downto 3)="101" or (OPCODE(5 downto 3)="000" and OPCODE/="000000") or OPCODE=OPCODE_NOP or OPCODE(5 downto 1)="01001") then
+    if(OPCODE(5 downto 3)="101" or (OPCODE(5 downto 3)="000" and OPCODE/=OPCODE_JAL and OPCODE/="000000") or OPCODE=OPCODE_NOP or OPCODE(5 downto 1)="01001") then
       return true;
     else
       return false;

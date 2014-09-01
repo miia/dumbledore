@@ -15,12 +15,12 @@ ARCHITECTURE structural_bht OF work.BPU is
 
 constant BHT_ROWS: integer := 1024; --size of the BHT = 2^k. since the IRAM is currently 1024 instructions, k=10 covers each instruction of the IRAM with a separate BHT row => no collisions can happen => best possible prediction accuracy.
 
-signal time_to_update: std_logic;  --two cycles after any prediction, this signal will become '1':
+signal time_to_update_nclk, branch_outcome_latched, time_to_update: std_logic;  --two cycles after any prediction, this signal will become '1':
                                    --it means that the BPU is ready to get back the actual branch outcome, and use it to update the corresponding line of the BHT.
                                    --(concretely, this signal is used to enable the BHT row to change the value in the state register)
 
-signal which_row, which_row_1cyclelater, which_row_2cycleslater: std_logic_vector(ceil_log2(BHT_ROWS)-1 downto 0);
-signal pred_requested, pred_requested_1cyclelater, pred_requested_2cycleslater: std_logic;
+signal which_row, which_row_nclk, which_row_1cyclelater, which_row_2cycleslater, which_row_3cycleslater: std_logic_vector(ceil_log2(BHT_ROWS)-1 downto 0);
+signal pred_requested, pred_requested_1cyclelater, pred_requested_2cycleslater, pred_requested_3cycleslater: std_logic;
 
 signal demux_input: std_logic_vector(1 downto 0);
 signal demux_outputs: demux_generic_output(BHT_ROWS-1 downto 0, 1 downto 0);
@@ -36,20 +36,24 @@ BEGIN
 
   -------------------------------------------------------------------------------------
   -- INPUT HALF of the BHT:                                                          --
-  -- This gets activated 2 cycles after any prediction is requested (and supplied),  --
+  -- This gets activated 3 cycles after any prediction is requested (and supplied),  --
   -- to get back the actual branch outcome and use it to update the BHT row          --
   -- that was used to generate the prediction.                                       --
   -------------------------------------------------------------------------------------
 
-  time_to_update <= pred_requested_2cycleslater; --if pred_requested was set to '1' two cycles ago, now pred_requested_2cycleslater is finally '1' too.
-                                                 --and time_to_update is just hardwired to it, because the name is easier to remember.
+  time_to_update_nclk <= pred_requested_3cycleslater; --if pred_requested was set to '1' two cycles ago, now pred_requested_2cycleslater is finally '1' too.
+                                                 --and time_to_update_nclk is just hardwired to it, because the name is easier to remember.
 
-  demux_input(0) <= BRANCH_OUTCOME;  --the actual branch outcome (1 bit), this comes from the outside (it's computed in fetch_stage, and supplied 2 cycles after any prediction).
+  clock_ttou: ENTITY work.LATCH_GENERIC
+  GENERIC MAP(WIDTH => 2) PORT MAP(  D(1) => time_to_update_nclk, D(0) =>BRANCH_OUTCOME, CLK => CLK, RESET => RESET, Q(1) => time_to_update, Q(0) => branch_outcome_latched);
+  clk_wrow: ENTITY work.LATCH_GENERIC
+  GENERIC MAP(WIDTH => ceil_log2(BHT_ROWS)) PORT MAP(CLK => CLK, RESET => RESET, D => which_row_nclk, Q => which_row);
+  demux_input(0) <= branch_outcome_latched;  --the actual branch outcome (1 bit), this comes from the outside (it's computed in fetch_stage, and supplied 2 cycles after any prediction).
   demux_input(1) <= time_to_update; --will turn to '1' two cycles after any branch prediction,
                                     --because that's when the actual branch result will come back to update the status register of the corresponding BHT row.
                                     --this will turn to '1' to enable the selected state register's EN input.
 
-  which_row <= PC(ceil_log2(BHT_ROWS)-1 downto 0);  --take as input the first k bits of the Branch instruction's address in IRAM (which is the current value of the PC).
+  which_row_nclk <= PC(ceil_log2(BHT_ROWS)-1 downto 0);  --take as input the first k bits of the Branch instruction's address in IRAM (which is the current value of the PC).
 
 
   demux0: entity work.DEMUX_GENERIC 
@@ -59,7 +63,7 @@ BEGIN
   )
   PORT MAP(
       A => demux_input, 
-      S => which_row_2cycleslater,
+      S => which_row_3cycleslater,
       Y => demux_outputs
   );
 
@@ -97,7 +101,7 @@ BEGIN
   )
   PORT MAP(
       A => mux_inputs,  --TODO: i'm VERY afraid that i'll have to map a DEMUX_GENERIC_OUTPUT signal to a MUX_GENERIC_INPUT of the same size just to make it get into the multiplexer, despite them begin defined in the same exact way.
-      S => which_row,
+      S => which_row_nclk,
       Y => bht_out
   );
 
@@ -108,11 +112,15 @@ BEGIN
   process(CLK) --pipelining of the which_row and pred_requested signals,
                --to make them get into the demux's input ports (respectively S and A(1)) TWO CYCLES AFTER they got into the mux's corresponding inputs.
   begin
+    if(CLK'event and CLK='1') then
+      which_row_3cycleslater <= which_row_2cycleslater;
       which_row_2cycleslater <= which_row_1cyclelater;
       which_row_1cyclelater  <= which_row;
 
+      pred_requested_3cycleslater <= pred_requested_2cycleslater;
       pred_requested_2cycleslater <= pred_requested_1cyclelater;
       pred_requested_1cyclelater  <= pred_requested;
+    end if;
   end process;
 
   --If we have an unconditioned JMP, we must predict a 1, otherwise go look at the corresponding BHT line.

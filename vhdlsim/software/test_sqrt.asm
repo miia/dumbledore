@@ -1,5 +1,5 @@
 ;Initialization
-addi R1, R0, 1000; -- X
+addi R1, R0, 25; -- X
 slli R1, R1, 16; -- X << 16 (fixed point)
 srli R2, R1, 8; -- N
 xor R3, R3, R3; -- OLDN
@@ -12,7 +12,7 @@ srli R15, R15, 1;
 jal error; -- Compute error in R17
 beqz R17, go_out;
 slti R10, R17, 0 ; --If error < 0, then..
-bnez R10, err_greater_zero;
+beqz R10, err_greater_zero;
 addi R2, R15, 0;
 j check_n;
 err_greater_zero:; -- if(error>0){
@@ -23,7 +23,7 @@ sub R10, R2, R3;
 sgtui R10, R10, 1;
 bnez R10, while;
 go_out:
-addi R30, R3, 0 ;--Saves result
+addi R30, R15, 0 ;--Saves result
 stall:
 j stall;
 ;
@@ -50,7 +50,7 @@ square:
   sw 12(r0), R16;
   sw 16(r0), R17;
   sw 20(r0), R2;
-
+  ;-- It seems that this assembler only supports decimal numbers -.-"
   lhi R2, 32768 ;
   addi R1, R0, 32;
   add R16, R15, R0;
@@ -58,12 +58,12 @@ square:
 
 sq_for:
   subi R1, R1, 1;
-  ;Takes the MSB of R16 into R17 -- It seems that this assembler only supports decimal numbers -.-"
+  slli R20, R20, 1;
+  ;Takes the MSB of R16 into R17 
   and R17, R16, R2;
   srai R17, R17, 31 ; -- So we obtain a mask of 111..11 or 000..00
   and R17, R17, R15 ; -- Decide wether to add 0 or A
   add R20, R20, R17 ;
-  slli R20, R20, 1;
   slli R16, R16, 1;
 
 
