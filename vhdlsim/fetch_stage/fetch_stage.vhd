@@ -29,8 +29,8 @@ ARCHITECTURE STRUCTURAL OF FETCH_STAGE IS
   signal the_prediction, had_wrong_prediction, nhad_wrong_prediction, had_wrong_prediction_nclk: std_logic;
   signal flags_tocheck, flags_tocheck_d: std_logic;
   signal not_check_notgated, not_check, no_check_d: std_logic;
-  signal set_wrong_force_notgated, set_wrong_force, set_wrong_force_d: std_logic;
-  signal tobedelayed, to_pipe_2, delayed_tobechecked: std_logic_vector(2 downto 0);
+  signal set_wrong_force_notgated, set_wrong_force, set_wrong_force_d, must_flush: std_logic;
+  signal tobedelayed, to_pipe_2, delayed_tobechecked, delayed_laststage, delayed_laststage_filtered: std_logic_vector(2 downto 0);
   signal rst_pipe: std_logic_vector(1 downto 0);
 
   signal bubble, nbubble, clk_bubblegated: std_logic;
@@ -90,14 +90,20 @@ BEGIN
   tobedelayed(0) <= flags_tocheck;
   delay_predictions : ENTITY work.DELAY_BLOCK
     generic map(
-	  WIDTH => 3, NREGS => 3
+	  WIDTH => 3, NREGS => 2
 	)
 	port map(
 	  D => tobedelayed,
 		CLK => CLK, --register can change value only if acc_en_n is '1' (acc_enable is '')
 		RESET => RESET,
-		Q => delayed_tobechecked
+    Q => delayed_laststage -- We must put 3 delays stages; 2 are put here while the last one is separated so that we can filter data w/flush_pipeline
 	);
+  delayed_laststage_filtered(2) <= delayed_laststage(2);
+  delayed_laststage_filtered(1) <= delayed_laststage(1) and (not must_flush); -- filter not_check with flush_pipeline, so that if a flush is in act the older (and wrong-fetched) predictions will be ignored. Remember that not_check is inverted here (see above), so if flush_pipeline=0 output is transparent, if flush=1 output is 0 (no_check_d=1).
+  delayed_laststage_filtered(0) <= delayed_laststage(0) and (not must_flush); -- As above, set_wrong_force_d=transparent if flush_pipeline=0 else 0.
+  delay_laststage: ENTITY work.REG_GENERIC
+  GENERIC MAP(WIDTH => 3) PORT MAP(D => delayed_laststage_filtered, CK => CLK, RESET => RESET, Q => delayed_tobechecked);
+
   set_wrong_force_d <= delayed_tobechecked(2);
   no_check_d <= not delayed_tobechecked(1); -- See above
   flags_tocheck_d <= delayed_tobechecked(0);
@@ -146,7 +152,8 @@ BEGIN
 		Q(0) => rst_pipe(1)
 	);
 
-  FLUSH_PIPELINE <= (not rst_pipe(1)) or (not rst_pipe(0)) or had_wrong_prediction; -- Both are active high and produce an active high
+  must_flush <= (not rst_pipe(1)) or (not rst_pipe(0)) or had_wrong_prediction; -- Both are active high and produce an active high
+  FLUSH_PIPELINE <= must_flush;
 
   ---------------------------------------------------------------------------------------------------------------------
   -- Pipeline stall/support
