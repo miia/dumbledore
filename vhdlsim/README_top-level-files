@@ -1,0 +1,4 @@
+Files marked with 000 contain constants;
+Files marked with 01 contain functions for debugging/simulation (e.g. "print") and some often-used math functions (e.g. base-2 log).
+Files marked with 02 contain descriptions of some primitives used throughout the whole design (e.g. mux21).
+Files marked with 03 and 04 contain more and more complex structural descriptions based on the primitives (and on other structural descriptions, e.g. accumulator is also based on RCA).
