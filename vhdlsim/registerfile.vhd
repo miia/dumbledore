@@ -55,7 +55,6 @@ begin
     else
         if (ENABLE='1') then
             if (WR='1' and (to_integer(unsigned(ADD_WR)) > 0)) then --WRITE HAS PRIORITY over read operations.
-              ASSERT FALSE REPORT "Sto scrivendo qualcosa" severity WARNING;
                 REGISTERS(to_integer(unsigned(ADD_WR))):=DATAIN;  --write has been requested, enable is high, reset is not active.
             end if;
             if (RD1='1') then

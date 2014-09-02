@@ -6,6 +6,8 @@ ENTITY DLX IS
   PORT(
   CLK: in std_logic;
   RESET: in std_logic;
+  IRAM_ADDR: out CODE_ADDRESS;
+  IRAM_DATA: in INSTRUCTION;
   POUT: out std_logic_vector(31 downto 0) -- Connected to R30
   );
 END DLX;
@@ -89,9 +91,8 @@ BEGIN
   clk_jmptaken: ENTITY work.REG_GENERIC
   GENERIC MAP(WIDTH => 1) PORT MAP(CK => CLK, RESET => RESET, D(0) => NOT_JMP_TAKEN_NCLK, Q(0) => NOT_JMP_TAKEN);
   
-  the_code_memory: ENTITY work.IRAM
-  PORT MAP(Rst => RESET, Addr => RDADDR(9 downto 0), Dout => INST);
-      
+  IRAM_ADDR <= RDADDR(31 downto 0);
+  INST <= IRAM_DATA;
 
   the_CU: ENTITY work.DLX_CU(CU_HW)
   PORT MAP(
