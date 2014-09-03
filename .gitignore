@@ -18,3 +18,5 @@ DLX_wave.do
 test.asm
 #Binary file
 test_sqrt
+#Synthesis files
+vhdlsim/command.log
