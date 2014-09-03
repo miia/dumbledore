@@ -16,8 +16,8 @@ entity COMPARATOR_GENERIC is
 	generic(N: integer);
 	port(	INPUT: in std_logic_vector(N-1 downto 0); --result coming from Arithmetic unit output.
 		WHAT_TO_CHECK: in std_logic_vector(3 downto 0);	-- see the CASE statement below for instructions; there are 5 choices possible on which condition to check => 3 bits are enough. Bit 3 switches signed/unsigned
-		OUTPUT: out std_logic_vector(N-1 downto 0) --generates an output of the same width as the input data (since this output will be fed into a register too), but its value will be either 0 or 1.
-    COUT: in std_logic;
+		OUTPUT: out std_logic_vector(N-1 downto 0); --generates an output of the same width as the input data (since this output will be fed into a register too), but its value will be either 0 or 1.
+		COUT: in std_logic
 	);
 
 end entity COMPARATOR_GENERIC;
@@ -47,7 +47,7 @@ begin
     COMP: process (WHAT_TO_CHECK, msb, zero, signed_comparison) is
     begin
       if(signed_comparison='1') then
-        case WHAT_TO_CHECK is
+        case WHAT_TO_CHECK(2 downto 0) is
         when  "000"  =>  output(0) <= msb;               -- A <  B
         when  "001"  =>  output(0) <= msb or zero;       -- A <= B
         when  "010"  =>  output(0) <= zero;              -- A =  B
@@ -57,7 +57,7 @@ begin
         when others =>   output(0) <= '0'; --fallback
         end case;
       else --Unsigned comparison
-        case WHAT_TO_CHECK is
+        case WHAT_TO_CHECK(2 downto 0) is
         when  "000"  =>  output(0) <= not COUT;               -- A <  B
         when  "001"  =>  output(0) <= (not COUT) or zero;       -- A <= B
         when  "010"  =>  output(0) <= COUT and zero;              -- A =  B
