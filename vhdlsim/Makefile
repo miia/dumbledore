@@ -5,4 +5,3 @@ sim:
 	../assembler.bin/dlxasm.pl -o software/test.bin -list software/test.list software/test.asm
 	cat software/test.bin | hexdump -v -e '/1 "%02X" /1 "%02X" /1 "%02X" /1 "%02X\n"' > software/test\_dump.txt
 	cp software/test\_dump.txt software/test.asm.mem
-#./mux_generic_flat.vhd 

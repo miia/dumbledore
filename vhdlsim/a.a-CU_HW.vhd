@@ -350,7 +350,7 @@ begin  -- dlx_cu_hw architecture
               cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-11) <= "11"; --needs the Logic block of the ALU to be selected in the output mux inside the ALU. generate corresponding signal.
 
               --configure ALU's arithmetic unit for register-register subtraction (take same activation signals as R-type subtraction above).
-              cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "1"; --pre-select output of adder/subtractor within arithmetic unit, request subtraction
+              cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= '1'; --pre-select output of adder/subtractor within arithmetic unit, request subtraction
               cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13) <= IR_func(4); --use bit 4 of IR (of IR_func) directly to drive the "signed" pin of the arithmetic unit block
               cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= not IR_func(4); --use bit 4 of IR (of IR_func) directly to drive the "unsigned" pin of the sign extension block
 
