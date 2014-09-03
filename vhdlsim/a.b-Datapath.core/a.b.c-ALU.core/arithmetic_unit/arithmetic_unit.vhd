@@ -38,9 +38,8 @@ BEGIN
   mulout <= mullongout(WIDTH-1 downto 0);
   Y_extended <= mullongout(2*WIDTH-1 downto WIDTH);
 
-  resultmux: ENTITY work.MUX21_GENERIC
-  GENERIC MAP(WIDTH => WIDTH)
-  PORT MAP(A => addout, B => mulout, S => OP(1), Y => Y_result);
+  Y_result <= addout;
+
   bypassmux: ENTITY work.MUX21_GENERIC
   GENERIC MAP(WIDTH => WIDTH)
   PORT MAP(A => A, B => Y_result, S => OP(2), Y => Y);

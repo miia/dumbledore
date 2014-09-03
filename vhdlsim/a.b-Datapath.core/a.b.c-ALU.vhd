@@ -22,7 +22,8 @@ END DLX_ALU;
 --bits 8 downto 6 = configure comparator (can't use bits 2 downto 0 for this, as it needs to be used at the same time as the arithmetic unit.)     --
 --bit  5 = drive a little mux21 to pre-select between logic unit output or LH output (before getting to the big 4-input mux)			   --
 --bits 4 downto 3 = drive the big output mux: "00"=>arith unit output; "01"=>LH/logic unit output; "10"=>shifter output; "11"=>comparator output.  --
---bit  2 downto 0 = configure the currently selected functional unit (arithmetic/logic/LH/shift/compare block).					   --
+--bit  2 downto 0 = configure the currently selected functional unit (arithmetic/logic/LH/shift/compare block).
+--^Note that arithmetic unit has only the adder/subtractor block, thus bit 1 can be unused. This will be used from the comparator block as a "signed" bit.
 -----------------------------------------------------------------------------------------------------------------------------------------------------
 
 
@@ -31,6 +32,7 @@ ARCHITECTURE structural OF DLX_ALU is
   signal shiftout, compout, logicout, lhout, logiclhout, intout: REGISTER_CONTENT;
   signal opselection: MUX_GENERIC_INPUT(3 downto 0, REGISTER_SIZE-1 downto 0);
   signal mustchangetolh: std_logic;
+  signal comparator_op: std_logic_vector(3 downto 0);
   signal FLAGS: ALU_FLAGS;
 
 begin
@@ -57,9 +59,11 @@ begin
   GENERIC MAP(N => REGISTER_SIZE) PORT MAP 
   (A => A_in, B => B_in(ceil_log2(REGISTER_SIZE)-1 downto 0), LOGIC_ARITH => OP(2), LEFT_RIGHT => OP(0), SHIFT_ROTATE => OP(1), OUTPUT => shiftout);
 
+  comparator_op(2 downto 0) <= OP(8 downto 6);
+  comparator_op(3) <= OP(1);
   comparator: ENTITY work.COMPARATOR_GENERIC  --receives output of arithmetic unit, and performs checks on it (under the assumption that A-B has just been computed)
   GENERIC MAP(N => REGISTER_SIZE) PORT MAP 
-  (INPUT => intout, WHAT_TO_CHECK => OP(8 downto 6), OUTPUT => compout);
+  (INPUT => intout, WHAT_TO_CHECK => comparator_op, OUTPUT => compout, COUT => FLAGS(0));
   
   --This should be a std_logic_vector assignment, no comment
   assign_values_to_muxinput: for i in 0 to REGISTER_SIZE-1 generate
