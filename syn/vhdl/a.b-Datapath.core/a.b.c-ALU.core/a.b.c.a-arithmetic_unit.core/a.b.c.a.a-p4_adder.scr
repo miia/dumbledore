@@ -2,6 +2,6 @@ variable LIBRARY
 callsubdirs {./a.b.c.a.a-p4_adder.core/}
 analyze -library $LIBRARY -format vhdl a.b.c.a.a-p4_adder.vhd
 
-compileexactmap P4_ADDER '-params "WIDTH=32"'
+compileexactmap P4_ADDER '-parameters "WIDTH=32"'
 do_reports a.b.c.a.a-p4_adder
 
