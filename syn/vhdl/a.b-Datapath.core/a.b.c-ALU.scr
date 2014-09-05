@@ -1,7 +1,0 @@
-variable LIBRARY
-
-callsubdirs {a.b.c-ALU.core}
-analyze -library $LIBRARY -format vhdl ./a.b.c-ALU.vhd
-
-compileexactmap DLX_ALU
-do_reports a.b.c-ALU

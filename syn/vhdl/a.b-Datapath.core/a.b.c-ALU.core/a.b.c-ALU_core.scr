@@ -1,5 +1,0 @@
-variable LIBRARY
-
-callsubdirs {a.b.c.a-arithmetic_unit.core/}
-analyze -library $LIBRARY -format vhdl [lsort [ls *.vhd] ]
-
