@@ -1,0 +1,16 @@
+#DLX synthesis: first analyze the misc utilities
+variable LIBRARY
+variable dict
+
+analyze -library $LIBRARY -format vhdl { [lsort [ls ./0*.vhd] ] }
+
+#Nothing else to do
+#TODO add CU_HW, it's too painful for me
+callsubdirs {a.b-Datapath.core}
+analyze -library $LIBRARY -format vhdl ./a.b-DLX_datapath.vhd
+
+#As DLX_datapath has only one architecture, we don't need to do anything else
+compileexactmap DLX_DATAPATH
+do_reports a.b-Datapath
+
+
