@@ -24,4 +24,5 @@ vhdlsim/default.svf
 syn/*.log
 syn/default.svf
 syn/work/
-reports/
+syn/reports/
+syn/results/

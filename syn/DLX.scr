@@ -1,4 +1,7 @@
 #Set global variables and let the innter scripts do the synthesis
+suppress_message VHD-4
+suppress_message CMD-041
+
 set REPORT_DIR [pwd]/reports
 set NETLIST_DIR [pwd]/results
 set S_LIB [pwd]/vhdl
@@ -51,7 +54,8 @@ proc compileexactmap {entity {params ""} } {
     echo "Compiling $entity with default architecture..."
     set arch ""
   }
-  elaborate $entity $arch -library $LIBRARY $params
+  set command "elaborate $entity $arch -library $LIBRARY $params"
+  eval $command
   compile -exact_map
 }
 

@@ -1,6 +1,6 @@
 library ieee;
 use ieee.std_logic_1164.all;
-use ieee.math_real.all;
+use work.ceillog.all;
 
 ENTITY carryGenerator IS
 GENERIC(
@@ -38,17 +38,8 @@ ARCHITECTURE structural of carryGenerator IS
 	       temp := temp - 2**(i-1) ;-- realign to prev block
           return temp;
        end function previousDiag;	       
-       function log2_unsigned ( x : natural ) return natural is
-               variable temp : real := real(x) * 1.0 ;
-               variable n : natural := 0 ;
-           begin
-               while temp > 1.0 loop
-                   temp := temp / 2.0 ;
-                   n := n + 1 ;
-               end loop ;
-               return n ;
-       end function log2_unsigned ;
-	TYPE pgMatrix IS ARRAY(log2_unsigned(SIZE) downto 0) of std_logic_vector(SIZE downto 1);
+
+	TYPE pgMatrix IS ARRAY(ceil_log2(SIZE) downto 0) of std_logic_vector(SIZE downto 1);
 	SIGNAL props: pgMatrix;
 	SIGNAL gens: pgMatrix;
 BEGIN	
@@ -84,7 +75,7 @@ BEGIN
    END GENERATE;
          
       
-	layers: FOR i in 2 to (log2_unsigned(SIZE)) GENERATE
+	layers: FOR i in 2 to (ceil_log2(SIZE)) GENERATE
 		single_elements: FOR j IN 1 TO (SIZE) GENERATE
 			sbararara: IF (j mod 4=0) GENERATE
 				first_block: IF(j/4 <= power(2,i-2)) GENERATE -- First block, first half=empty, 2nd half=generate
@@ -130,7 +121,7 @@ BEGIN
    --First is CIn (treated previously) 
    --Others are at multiple of 4 (i.e. 1->4, 2->8..)
    --Index start at 0, so i->3, 2->7..
-      OUTPUT(i)<=gens(log2_unsigned(SIZE))(i*4);
+      OUTPUT(i)<=gens(ceil_log2(SIZE))(i*4);
   END GENERATE;
       
 END ARCHITECTURE;
