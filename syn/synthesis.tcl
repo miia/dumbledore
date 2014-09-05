@@ -1,5 +1,6 @@
 
 #1) Get all your non-testbench .vhd files with "find . -name "*.vhd" -not -name "tb*" | sort" !
+# NOTE: don't include the IRAM - it shouldn't be synthesized.
 set vhdfiles {
 ./vhdl/000-globals.vhd
 ./vhdl/000-opcodes.vhd
@@ -77,7 +78,7 @@ set dict {
 
 #actual synthesis step
 foreach {entity argslist} $dict {
-  elaborate $entity -architecture [lindex $argslist 0] -library DEFAULT 
+  elaborate $entity -architecture [lindex $argslist 0] -library WORK 
   compile -exact_map
   set getout [gets stdin]
   if {[string match "q" $getout] == 1} {return}
