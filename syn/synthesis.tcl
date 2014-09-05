@@ -1,3 +1,36 @@
+suppress_message VHD-4
+set LIBRARY WORK
+set NETLIST_DIR results/
+set REPORT_DIR reports/
+
+proc compileexactmap {entity {params ""} } {
+  variable dict
+  variable LIBRARY
+  if { [lsearch $dict $entity] >= 0 } {
+    #Architecture is defined into the list
+    puts "Index: [lsearch $dict $entity]"
+    puts "List: [lindex [lindex $dict [expr [lsearch $dict $entity] + 1]] 0]"
+    set theArch [lindex [lindex $dict [expr [lsearch $dict $entity] + 1]] 0]
+    echo "Compiling $entity with architecture $theArch..."
+    set arch "-architecture $theArch"
+  } else {
+    echo "Compiling $entity with default architecture..."
+    set arch ""
+  }
+  set command "elaborate $entity $arch -library $LIBRARY $params"
+  eval $command
+  compile -exact_map
+}
+
+proc do_reports {filename} {
+  variable NETLIST_DIR
+  variable REPORT_DIR
+  write_file -format vhdl -hierarchy -output $NETLIST_DIR/$filename.vhd
+  write_file -format verilog -hierarchy -output $NETLIST_DIR/$filename.v
+  report_area -nosplit > $REPORT_DIR/${filename}_area.rpt
+  report_timing -nworst 10 > $REPORT_DIR/${filename}_timing.rpt
+  report_power > $REPORT_DIR/${filename}_power.rpt
+}
 
 #1) Get all your non-testbench .vhd files with "find . -name "*.vhd" -not -name "tb*" | sort" !
 # NOTE: don't include the IRAM - it shouldn't be synthesized.
@@ -39,8 +72,6 @@ set vhdfiles {
 ./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.a-arithmetic_unit.core/a.b.c.a.a-p4_adder.core/a.b.c.a.a.f-carryselect_row.vhd
 ./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.a-arithmetic_unit.core/a.b.c.a.a-p4_adder.core/a.b.c.a.a.g-carry_generator.vhd
 ./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.a-arithmetic_unit.core/a.b.c.a.a-p4_adder.vhd
-./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.a-arithmetic_unit.core/a.b.c.a.b-boothmul.core/a.b.c.a.b.a-booth_encoder.vhd
-./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.a-arithmetic_unit.core/a.b.c.a.b-boothmul.vhd
 ./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.a-arithmetic_unit.vhd
 ./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.b-logic_unit.vhd
 ./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.c-shifter_generic.vhd
@@ -71,17 +102,19 @@ set dict {
     "ND2" { "ARCH1" }
     "REG_GENERIC" { "PIPPO" }
     "DELAY_BLOCK" { "structural" }
+    "REGISTER_FILE" { "A" }
     "RCA" { "STRUCTURAL" }
     "ACC" { "Structural" }
+    "DLX" { "structural" }
 
 }
 
 #actual synthesis step
 foreach {entity argslist} $dict {
-  elaborate $entity -architecture [lindex $argslist 0] -library WORK 
-  compile -exact_map
-  set getout [gets stdin]
-  if {[string match "q" $getout] == 1} {return}
+  compileexactmap $entity
+  do_reports $entity
+#  set getout [gets stdin]
+#  if {[string match "q" $getout] == 1} {return}
 }
 
 
