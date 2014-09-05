@@ -1,0 +1,2 @@
+variable LIBRARY
+analyze -library $LIBRARY -format vhdl a.b.a.a-PC_ACC.vhd

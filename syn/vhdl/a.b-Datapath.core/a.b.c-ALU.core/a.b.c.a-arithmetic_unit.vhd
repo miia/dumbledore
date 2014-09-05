@@ -32,12 +32,6 @@ BEGIN
   GENERIC MAP(WIDTH => WIDTH)
   PORT MAP(A => A, B => B_sign, S => addout, Cin => OP(0), Cout => Cout);
 
-  boothmul: ENTITY work.BOOTHMUL
-  GENERIC MAP(WIDTH => WIDTH)
-  PORT MAP(A => A, B => B, OUTPUT => mullongout);
-  mulout <= mullongout(WIDTH-1 downto 0);
-  Y_extended <= mullongout(2*WIDTH-1 downto WIDTH);
-
   Y_result <= addout;
 
   bypassmux: ENTITY work.MUX21_GENERIC

@@ -1,0 +1,5 @@
+variable LIBRARY
+callsubdirs {a.b.a.c-bpu_v3_BHT.core/}
+analyze -library $LIBRARY a.b.a.b-bpu_entity.vhd -format vhdl a.b.a.c-bpu_v3_BHT.vhd
+compileexactmap BPU
+do_reports a.b.a.c-bpu_v3_bht

@@ -21,6 +21,7 @@ set dict {
     "DELAY_BLOCK" { "structural" }
     "RCA" { "STRUCTURAL" }
     "ACC" { "Structural" }
+    "BPU" { "structural_bht" }
 
     # "DLX_CU" { "CU_HW" }
     # "DLX_DATAPATH" { "dlx_simple" }   ;# ♬ it's not so simple anymooore ♬
