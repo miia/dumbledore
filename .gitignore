@@ -26,3 +26,8 @@ syn/default.svf
 syn/work/
 syn/reports/
 syn/results/
+#DC_SHELL-generated files
+SYN_DLX.vhd
+SYN_DLX.v
+#Library for the above
+work_syn/

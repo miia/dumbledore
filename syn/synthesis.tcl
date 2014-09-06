@@ -27,6 +27,7 @@ proc do_reports {filename} {
   variable REPORT_DIR
   write_file -format vhdl -hierarchy -output $NETLIST_DIR/$filename.vhd
   write_file -format verilog -hierarchy -output $NETLIST_DIR/$filename.v
+  write_file -format ddc -hierarchy -output $NETLIST_DIR/$filename.ddc
   report_area -nosplit > $REPORT_DIR/${filename}_area.rpt
   report_timing -nworst 10 > $REPORT_DIR/${filename}_timing.rpt
   report_power > $REPORT_DIR/${filename}_power.rpt
