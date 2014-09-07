@@ -6,7 +6,7 @@ sim: program
 	find ./test_bench/ -name "*.vhd" | sort | xargs $(COMPILE)
 .PHONY: program
 synsim: program nangate
-	$(COMPILE) ../syn/results/SYN_DLX.vhd
+	$(COMPILE) ../syn/results/SYN_DLX.vhdl
 program:
 	../assembler.bin/dlxasm.pl -o software/test.bin -list software/test.list software/test.asm
 	cat software/test.bin | hexdump -v -e '/1 "%02X" /1 "%02X" /1 "%02X" /1 "%02X\n"' > software/test\_dump.txt
