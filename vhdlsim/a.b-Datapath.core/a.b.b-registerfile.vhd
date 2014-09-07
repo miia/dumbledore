@@ -73,43 +73,43 @@ end process;
 end A;
 
 ----
-
-library IEEE;
-use IEEE.std_logic_1164.all;
-use IEEE.numeric_std.all;
-use WORK.all;
-use work.ceillog.all;
-use work.myTypes.all;
-use work.mux_generic_input.all;
-
-ARCHITECTURE structural OF register_file IS
-  subtype REG_ADDR is natural range 0 to NREGS-1; -- using natural type (from now on, REG_ADDR is equivalent to "(0 to 31)") -- register 0 is reserved
-	type REG_ARRAY is array(REG_ADDR) of std_logic_vector(REG_WIDTH-1 downto 0); -- we'll use REG_WIDTH=64
-  signal theregs: REG_ARRAY; -- Debug purpose
-  signal enables: std_logic_vector(REG_ADDR);
-  signal input_muxes: mux_generic_input(NREGS-1 downto 0, REG_WIDTH-1 downto 0);
-BEGIN
-  demuxer: process(ADD_WR, WR) begin -- Enables the register for writing
-    enables <= (OTHERS => '1');
-    enables(to_integer(unsigned(ADD_WR))) <= '0' or (not WR) ; -- If WR='0', enable forced to 1 (enable is active-low)
-  end process;
-
-  theregs(0) <= (OTHERS => '0'); -- R0 can't be written and is hard-wired
-  gen_registers: for i in 1 to NREGS-1 generate
-    regN: entity work.REG_GENERIC_ENABLED
-    GENERIC MAP(WIDTH => REG_WIDTH) PORT MAP(CK => CLK, RESET => RESET, D => DATAIN, Q => theregs(i), ENABLE => enables(i));
-  end generate;
-
-  gen_input_muxes: for i in REG_ADDR generate
-    inner_gen: for j in 0 to REG_WIDTH-1 generate
-      input_muxes(i,j) <= theregs(i)(j);
-    end generate;
-  end generate;
-
-  RD1_MUX: ENTITY work.MUX_GENERIC
-  GENERIC MAP(WIDTH => REG_WIDTH, HEIGHT => NREGS) PORT MAP(A => input_muxes, S => ADD_RD1, Y => OUT1);
-
-  RD2_MUX: ENTITY work.MUX_GENERIC
-  GENERIC MAP(WIDTH => REG_WIDTH, HEIGHT => NREGS) PORT MAP(A => input_muxes, S => ADD_RD2, Y => OUT2);
-END ARCHITECTURE;
-
+--
+--library IEEE;
+--use IEEE.std_logic_1164.all;
+--use IEEE.numeric_std.all;
+--use WORK.all;
+--use work.ceillog.all;
+--use work.myTypes.all;
+--use work.mux_generic_input.all;
+--
+--ARCHITECTURE structural OF register_file IS
+--  subtype REG_ADDR is natural range 0 to NREGS-1; -- using natural type (from now on, REG_ADDR is equivalent to "(0 to 31)") -- register 0 is reserved
+--	type REG_ARRAY is array(REG_ADDR) of std_logic_vector(REG_WIDTH-1 downto 0); -- we'll use REG_WIDTH=64
+--  signal theregs: REG_ARRAY; -- Debug purpose
+--  signal enables: std_logic_vector(REG_ADDR);
+--  signal input_muxes: mux_generic_input(NREGS-1 downto 0, REG_WIDTH-1 downto 0);
+--BEGIN
+--  demuxer: process(ADD_WR, WR) begin -- Enables the register for writing
+--    enables <= (OTHERS => '1');
+--    enables(to_integer(unsigned(ADD_WR))) <= '0' or (not WR) ; -- If WR='0', enable forced to 1 (enable is active-low)
+--  end process;
+--
+--  theregs(0) <= (OTHERS => '0'); -- R0 can't be written and is hard-wired
+--  gen_registers: for i in 1 to NREGS-1 generate
+--    regN: entity work.REG_GENERIC_ENABLED
+--    GENERIC MAP(WIDTH => REG_WIDTH) PORT MAP(CK => CLK, RESET => RESET, D => DATAIN, Q => theregs(i), ENABLE => enables(i));
+--  end generate;
+--
+--  gen_input_muxes: for i in REG_ADDR generate
+--    inner_gen: for j in 0 to REG_WIDTH-1 generate
+--      input_muxes(i,j) <= theregs(i)(j);
+--    end generate;
+--  end generate;
+--
+--  RD1_MUX: ENTITY work.MUX_GENERIC
+--  GENERIC MAP(WIDTH => REG_WIDTH, HEIGHT => NREGS) PORT MAP(A => input_muxes, S => ADD_RD1, Y => OUT1);
+--
+--  RD2_MUX: ENTITY work.MUX_GENERIC
+--  GENERIC MAP(WIDTH => REG_WIDTH, HEIGHT => NREGS) PORT MAP(A => input_muxes, S => ADD_RD2, Y => OUT2);
+--END ARCHITECTURE;
+--
