@@ -27,8 +27,8 @@ begin
 Y <= feed_back; --connect feedback and Y signals
 
 -- Ci <= 1, so PC=PC+1+imm or PC=PC+1+0; as code addresses are always *4, PC=PC+4+imm of PC=PC+4+0
-add_to_pc: ENTITY work.RCA
-GENERIC MAP( WIDTH => WIDTH ) PORT MAP(A => out_mux_pred, B => feed_back, Ci => '1', S => out_add, Co => OPEN);
+add_to_pc: ENTITY work.p4_adder
+GENERIC MAP( WIDTH => WIDTH ) PORT MAP(A => out_mux_pred, B => feed_back, Cin => '1', S => out_add, Cout => OPEN);
 
 mux_pred : ENTITY work.MUX21_GENERIC
   generic map(
