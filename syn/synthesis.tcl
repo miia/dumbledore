@@ -19,7 +19,7 @@ proc compileexactmap {entity {params ""} } {
   }
   set command "elaborate $entity $arch -library $LIBRARY $params"
   eval $command
-  compile -exact_map
+  compile -exact_map ;#NOTE: this is a first compilation without constraints; and a .ddc file will be generated (by calling do_reports) to save the basic compiled design; starting from there, more optimized synthesis will be performed later, using several different timing constraints (see pareto.tcl)
 }
 
 proc do_reports {filename} {
@@ -113,7 +113,7 @@ set dict {
 #actual synthesis step
 foreach {entity argslist} $dict {
   compileexactmap $entity
-  do_reports $entity
+  do_reports $entity    ;#this is also re-done in another script, for each compilation that's re-done using timing constraints - see pareto.tcl
 #  set getout [gets stdin]
 #  if {[string match "q" $getout] == 1} {return}
 }
