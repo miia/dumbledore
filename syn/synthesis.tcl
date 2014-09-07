@@ -40,6 +40,7 @@ set vhdfiles {
 ./vhdl/000-opcodes.vhd
 ./vhdl/01-ceillog.vhd
 ./vhdl/01-log2.vhd
+./vhdl/01-nd2.vhd
 ./vhdl/01-txt_util.vhd
 ./vhdl/02-fa.vhd
 ./vhdl/02-imm_extender.vhd
@@ -48,7 +49,6 @@ set vhdfiles {
 ./vhdl/02-mux21_generic.vhd
 ./vhdl/02-mux21.vhd
 ./vhdl/02-mux_generic.vhd
-./vhdl/02-nd2.vhd
 ./vhdl/02-reg_generic_enabled.vhd
 ./vhdl/02-reg_generic.vhd
 ./vhdl/03-delay_block.vhd
