@@ -351,7 +351,7 @@ begin  -- dlx_cu_hw architecture
 
               --configure ALU's arithmetic unit for register-register subtraction (take same activation signals as R-type subtraction above).
               cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= '1'; --pre-select output of adder/subtractor within arithmetic unit, request subtraction
-              cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13) <= IR_func(4); --use bit 4 of IR (of IR_func) directly to drive the "signed" pin of the arithmetic unit block
+              cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13) <= not IR_func(4); --use bit 4 of IR (of IR_func) directly to drive the "signed" pin of the arithmetic unit block
               cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= not IR_func(4); --use bit 4 of IR (of IR_func) directly to drive the "unsigned" pin of the sign extension block
 
 
@@ -742,8 +742,9 @@ begin  -- dlx_cu_hw architecture
       cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-10 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-11) <= "11"; --needs the Logic block of the ALU to be selected in the output mux inside the ALU. generate corresponding signal.
 
       --configure ALU's arithmetic unit for register-register subtraction (take same activation signals as R-type subtraction above).
-      cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13 downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= "11"; --pre-select output of adder/subtractor within arithmetic unit, request subtraction
-      cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= not IR_opcode(5); --use bit 5 of IR_opcode) directly to drive the "unsigned" pin of the arithmetic unit block
+      cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-13) <= not IR_opcode(5); --use bit 5 of IR_opcode directly to drive the "signed" pin of the arithmetic unit block
+      cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-14) <= '1'; --pre-select output of adder/subtractor within arithmetic unit, request subtraction
+      cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-15) <= not IR_opcode(5); --use bit 5 of IR_opcode) directly to drive the "signed" pin of the sign extension block
       cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-6) <= "0000000"; --leave Data Memory completely unused - not activated, read and write disabled, output register disabled (Load Memory Register), etc. 
 
       cw(CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE downto CW_SIZE-1-CW_IF_SIZE-CW_ID_SIZE-CW_EX_SIZE-CW_MEM_SIZE-1) <= "11"; --mux passes output of ALU in the Writeback stage; Register File Write enabled.

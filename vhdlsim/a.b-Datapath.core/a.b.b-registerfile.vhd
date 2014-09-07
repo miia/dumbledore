@@ -66,6 +66,8 @@ begin
             end if;
         end if;
     end if;
+        REG_FIXED_OUT <= REGISTERS(TO_SEND); -- Use a register as output port
+        theregs <= REGISTERS;
   end if;
   --end generate;
 end process;
