@@ -33,7 +33,7 @@ proc do_reports {filename} {
   report_power > $REPORT_DIR/${filename}_power.rpt
 }
 
-#1) Get all your non-testbench .vhd files with "find . -name "*.vhd" -not -name "tb*" | sort" !
+#1) Get all your non-testbench .vhd files with "find ./vhdl/ -name "*.vhd" -not -name "tb*" | sort" !
 # NOTE: don't include the IRAM - it shouldn't be synthesized.
 set vhdfiles {
 ./vhdl/000-globals.vhd
@@ -53,7 +53,15 @@ set vhdfiles {
 ./vhdl/02-reg_generic.vhd
 ./vhdl/03-delay_block.vhd
 ./vhdl/03-rca.vhd
-./vhdl/04-ACC.vhd
+./vhdl/04-p4_adder.core/04.1-ha.vhd
+./vhdl/04-p4_adder.core/04.2-pg.vhd
+./vhdl/04-p4_adder.core/04.3-pg_network.vhd
+./vhdl/04-p4_adder.core/04.4-generator.vhd
+./vhdl/04-p4_adder.core/04.5-carryselect_block.vhd
+./vhdl/04-p4_adder.core/04.6-carryselect_row.vhd
+./vhdl/04-p4_adder.core/04.7-carry_generator.vhd
+./vhdl/04-p4_adder.vhd
+./vhdl/05-ACC.vhd
 ./vhdl/a.a-CU_HW.core/forwarder.vhd
 ./vhdl/a.a-CU_HW.vhd
 ./vhdl/a.b-Datapath.core/a.b.a-fetch_stage.core/a.b.a.a-PC_ACC.vhd
@@ -73,6 +81,8 @@ set vhdfiles {
 ./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.a-arithmetic_unit.core/a.b.c.a.a-p4_adder.core/a.b.c.a.a.f-carryselect_row.vhd
 ./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.a-arithmetic_unit.core/a.b.c.a.a-p4_adder.core/a.b.c.a.a.g-carry_generator.vhd
 ./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.a-arithmetic_unit.core/a.b.c.a.a-p4_adder.vhd
+./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.a-arithmetic_unit.core/a.b.c.a.b-boothmul.core/a.b.c.a.b.a-booth_encoder.vhd
+./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.a-arithmetic_unit.core/a.b.c.a.b-boothmul.vhd
 ./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.a-arithmetic_unit.vhd
 ./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.b-logic_unit.vhd
 ./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.c-shifter_generic.vhd
