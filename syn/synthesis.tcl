@@ -25,8 +25,9 @@ proc compileexactmap {entity {params ""} } {
 proc do_reports {filename} {
   variable NETLIST_DIR
   variable REPORT_DIR
-  write_file -format vhdl -hierarchy -output $NETLIST_DIR/$filename.vhd
-  write_file -format verilog -hierarchy -output $NETLIST_DIR/$filename.v
+  #NOT YET - annotated vhdl and verilog files take time to produce, and they're only needed for the design that will be fed into Encounter for physical layout (or back into ModelSim for gate-level simulation).
+  #write_file -format vhdl -hierarchy -output $NETLIST_DIR/$filename.vhd
+  #write_file -format verilog -hierarchy -output $NETLIST_DIR/$filename.v
   write_file -format ddc -hierarchy -output $NETLIST_DIR/$filename.ddc
   report_area -nosplit > $REPORT_DIR/${filename}_area.rpt
   report_timing -nworst 10 > $REPORT_DIR/${filename}_timing.rpt
