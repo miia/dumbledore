@@ -33,13 +33,14 @@ if {[string match "" $ADVANCED_OPTS] == 1} { puts "\[none\]" } else {puts $ADVAN
 #actual optimization (loops with several different constraints)
 for {set i 4} {$i <= 10} {incr i} {
   for {set j 20} {$j <= 70} {set j [expr $j+10]} {
+    #if {$i == 4 && $j == 20} {continue} ;#has already been done
     puts "Compiling with target clock period of $i ns and target total power of $j uW..."
     create_clock -period $i [get_ports CLK]		;#set timing constraint on clock period
     set_max_total_power $j mW				;#set maximum total power constraint
     set command "compile -exact_map $ADVANCED_OPTS"
     eval $command 					;#perform optimized compilation again
-    puts "Generating report for $i ns clock and $j uW total power"
-    do_reports "DLX_${i}ns_${j}uW"
+    puts "Generating report for $i ns clock and $j mW total power"
+    do_reports "DLX_${i}ns_${j}mW"
   }
 }
 
