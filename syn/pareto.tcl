@@ -25,18 +25,19 @@ proc do_reports {filename} {
 read_file -format ddc results/DLX.ddc
 
 #add advanced options, if any, according to configuration
-if {$TRYHARD == 1} {append ADVANCED_OPTS "-map_effort high -area_effort high -power_effort high -ungroup-all "}
+if {$TRYHARD == 1} {append ADVANCED_OPTS "-map_effort high -area_effort high -power_effort high -ungroup_all "}
 if {$CG == 1} {append ADVANCED_OPTS "-gate_clock "}
 puts -nonewline "Using advanced options: "
 if {[string match "" $ADVANCED_OPTS] == 1} { puts "\[none\]" } else {puts $ADVANCED_OPTS}
 
 #actual optimization (loops with several different constraints)
 for {set i 4} {$i <= 10} {incr i} {
-  for {set i 20} {$i <= 70} {set i [expr $i+10]} {
+  for {set j 20} {$j <= 70} {set j [expr $j+10]} {
     puts "Compiling with target clock period of $i ns and target total power of $j uW..."
-    create_clock -period $i [get_ports CLK]	;#set timing constraint on clock period
-    set_max_total_power $j mW			;#set maximum total power constraint
-    compile -exact_map $ADVANCED_OPTS		;#perform compilation (optimization) again
+    create_clock -period $i [get_ports CLK]		;#set timing constraint on clock period
+    set_max_total_power $j mW				;#set maximum total power constraint
+    set command "compile -exact_map $ADVANCED_OPTS"
+    eval $command 					;#perform optimized compilation again
     puts "Generating report for $i ns clock and $j uW total power"
     do_reports "DLX_${i}ns_${j}uW"
   }
