@@ -20,16 +20,16 @@ proc do_reports {filename} {
 #load result of previous pre-synthesis of DLX design (result was exported in a .ddc file) 
 read_file -format ddc results/DLX.ddc
 
+#actual optimization (loops with several different constraints)
 for {set i 4} {$i <= 10} {incr i} {
-  puts "Compiling with target clock period of $i ns..."
-  create_clock -period $i [get_ports CLK]	;#set timing constraint on clock period
-  compile -exact_map				;#perform compilation (optimization) again
-  puts "Generating report for $i ns clock"
-  do_reports "DLX_${i}_ns"
+  for {set i 20} {$i <= 70} {set i [expr $i+10]} {
+    puts "Compiling with target clock period of $i ns and target total power of $j uW..."
+    create_clock -period $i [get_ports CLK]	;#set timing constraint on clock period
+    set_max_total_power $j mW			;#set maximum total power constraint
+    compile -exact_map				;#perform compilation (optimization) again
+    puts "Generating report for $i ns clock and $j uW total power"
+    do_reports "DLX_${i}ns_${j}uW"
+  }
 }
-
-#TODO:
-#set_max_total_power inner loop
-#export ANNOTATED vhdl/verilog files for Encounter? - no, only for the chosen design!
 
 
