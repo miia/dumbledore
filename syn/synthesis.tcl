@@ -73,14 +73,6 @@ set vhdfiles {
 ./vhdl/a.b-Datapath.core/a.b.a-fetch_stage.core/a.b.a.c-bpu_v3_BHT.vhd
 ./vhdl/a.b-Datapath.core/a.b.a-fetch_stage.vhd
 ./vhdl/a.b-Datapath.core/a.b.b-registerfile.vhd
-./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.a-arithmetic_unit.core/a.b.c.a.a-p4_adder.core/a.b.c.a.a.a-ha.vhd
-./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.a-arithmetic_unit.core/a.b.c.a.a-p4_adder.core/a.b.c.a.a.b-pg.vhd
-./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.a-arithmetic_unit.core/a.b.c.a.a-p4_adder.core/a.b.c.a.a.c-pg_network.vhd
-./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.a-arithmetic_unit.core/a.b.c.a.a-p4_adder.core/a.b.c.a.a.d-generator.vhd
-./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.a-arithmetic_unit.core/a.b.c.a.a-p4_adder.core/a.b.c.a.a.e-carryselect_block.vhd
-./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.a-arithmetic_unit.core/a.b.c.a.a-p4_adder.core/a.b.c.a.a.f-carryselect_row.vhd
-./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.a-arithmetic_unit.core/a.b.c.a.a-p4_adder.core/a.b.c.a.a.g-carry_generator.vhd
-./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.a-arithmetic_unit.core/a.b.c.a.a-p4_adder.vhd
 ./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.a-arithmetic_unit.core/a.b.c.a.b-boothmul.core/a.b.c.a.b.a-booth_encoder.vhd
 ./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.a-arithmetic_unit.core/a.b.c.a.b-boothmul.vhd
 ./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.a-arithmetic_unit.vhd
