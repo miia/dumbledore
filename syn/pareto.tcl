@@ -4,7 +4,7 @@ set REPORT_DIR reports/
 
 set ADVANCED_OPTS ""
 set TRYHARD 1	;#if 1, adds "-map_effort high -area_effort high -power_effort high -ungroup-all" to advanced options
-set CG 1	;#if 1, adds clock gating to advanced options
+set CG 0	;#if 1, adds clock gating to advanced options
 
 proc do_reports {filename} {
   variable NETLIST_DIR
@@ -21,9 +21,6 @@ proc do_reports {filename} {
   report_power > $REPORT_DIR/${filename}_power.rpt
 }
 
-#load result of previous pre-synthesis of DLX design (result was exported in a .ddc file) 
-read_file -format ddc results/DLX.ddc
-
 #add advanced options, if any, according to configuration
 if {$TRYHARD == 1} {append ADVANCED_OPTS "-map_effort high -area_effort high -power_effort high -ungroup_all "}
 if {$CG == 1} {append ADVANCED_OPTS "-gate_clock "}
@@ -33,6 +30,9 @@ if {[string match "" $ADVANCED_OPTS] == 1} { puts "\[none\]" } else {puts $ADVAN
 #actual optimization (loops with several different constraints)
 for {set i 4} {$i <= 10} {incr i} {
   for {set j 20} {$j <= 70} {set j [expr $j+10]} {
+    #load result of previous pre-synthesis of DLX design (result was exported in a .ddc file) 
+    read_file -format ddc results/DLX.ddc
+
     #if {$i == 4 && $j == 20} {continue} ;#has already been done
     puts "Compiling with target clock period of $i ns and target total power of $j uW..."
     create_clock -period $i [get_ports CLK]		;#set timing constraint on clock period

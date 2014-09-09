@@ -17,9 +17,10 @@ proc compileexactmap {entity {params ""} } {
     echo "Compiling $entity with default architecture..."
     set arch ""
   }
-  set command "elaborate $entity $arch -library $LIBRARY $params"
+  set command "elaborate $entity $arch -library $LIBRARY $params"  ;# "elaborate" builds an internal graph of the selected circuit (if it is a hierarchical circuit, this automatically builds on other entities that were previously analyzed too), and then maps this graph to general (=technology-independent) logic gates.
   eval $command
-  compile -exact_map ;#NOTE: this is a first compilation without constraints; and a .ddc file will be generated (by calling do_reports) to save the basic compiled design; starting from there, more optimized synthesis will be performed later, using several different timing constraints (see pareto.tcl)
+  compile -exact_map  ;# "compile" finally translated our high-level netlist of general logic cells into a netlist of TECHNOLOGY-DEPENDENT cells from the tech library.
+  #NOTE: in this phase we could also specify optimization constraints, but we won't yet: a .ddc file will be generated after the unconstrained optimization (by calling do_reports), and later on, starting from there, more optimized synthesis will be performed again (see pareto.tcl).
 }
 
 proc do_reports {filename} {
@@ -87,7 +88,7 @@ set vhdfiles {
 ./vhdl/a-DLX.vhd
 }
 
-analyze -library WORK -format vhdl $vhdfiles
+analyze -library WORK -format vhdl $vhdfiles  ;#check whether each entity is synthesizable or not.
 
 #2) ...and compile/maintain the following by hand -.- (there's no automatic way to choose the right architecture in files that have several, unless we establish a convention about the order in which architectures are specified - e.g. first architecture in the source file gets used).
 #Dictionary containing (entity, architecture) pairs; note there's only one chosen architecture to be synthesized for each of the entities.
