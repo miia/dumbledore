@@ -1,6 +1,7 @@
 #Finds Pareto points in terms of clock period VS total power (dynamic+leakage);
 #Area should have more or less the SAME value for all found points, since all available timing slack is used to minimize power as much as possible.
 
+
 set LIBRARY WORK
 set NETLIST_DIR results/
 set REPORT_DIR reports/
@@ -42,7 +43,7 @@ for {set i 3} {$i <= 10} {incr i} {
   set command "compile -exact_map $ADVANCED_OPTS"
   eval $command 					;#perform optimized compilation again
   puts "Generating report for ${i}ns clock (and minimum possible power)"
-  do_reports "DLX_${i}ns_min_power"
+  do_reports "DLX_${i}ns_minpower"
 }
 
 
