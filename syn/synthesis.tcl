@@ -17,23 +17,25 @@ proc compileexactmap {entity {params ""} } {
     echo "Compiling $entity with default architecture..."
     set arch ""
   }
-  set command "elaborate $entity $arch -library $LIBRARY $params"
+  set command "elaborate $entity $arch -library $LIBRARY $params"  ;# "elaborate" builds an internal graph of the selected circuit (if it is a hierarchical circuit, this automatically builds on other entities that were previously analyzed too), and then maps this graph to general (=technology-independent) logic gates.
   eval $command
-  compile -exact_map ;#NOTE: this is a first compilation without constraints; and a .ddc file will be generated (by calling do_reports) to save the basic compiled design; starting from there, more optimized synthesis will be performed later, using several different timing constraints (see pareto.tcl)
+  compile -exact_map  ;# "compile" finally translated our high-level netlist of general logic cells into a netlist of TECHNOLOGY-DEPENDENT cells from the tech library.
+  #NOTE: in this phase we could also specify optimization constraints, but we won't yet: a .ddc file will be generated after the unconstrained optimization (by calling do_reports), and later on, starting from there, more optimized synthesis will be performed again (see pareto.tcl).
 }
 
 proc do_reports {filename} {
   variable NETLIST_DIR
   variable REPORT_DIR
-  write_file -format vhdl -hierarchy -output $NETLIST_DIR/$filename.vhd
-  write_file -format verilog -hierarchy -output $NETLIST_DIR/$filename.v
+  #NOT YET - annotated vhdl and verilog files take time to produce, and they're only needed for the design that will be fed into Encounter for physical layout (or back into ModelSim for gate-level simulation).
+  #write_file -format vhdl -hierarchy -output $NETLIST_DIR/$filename.vhd
+  #write_file -format verilog -hierarchy -output $NETLIST_DIR/$filename.v
   write_file -format ddc -hierarchy -output $NETLIST_DIR/$filename.ddc
   report_area -nosplit > $REPORT_DIR/${filename}_area.rpt
   report_timing -nworst 10 > $REPORT_DIR/${filename}_timing.rpt
   report_power > $REPORT_DIR/${filename}_power.rpt
 }
 
-#1) Get all your non-testbench .vhd files with "find . -name "*.vhd" -not -name "tb*" | sort" !
+#1) Get all your non-testbench .vhd files with "find ./vhdl/ -name "*.vhd" -not -name "tb*" | sort" !
 # NOTE: don't include the IRAM - it shouldn't be synthesized.
 set vhdfiles {
 ./vhdl/000-globals.vhd
@@ -53,7 +55,15 @@ set vhdfiles {
 ./vhdl/02-reg_generic.vhd
 ./vhdl/03-delay_block.vhd
 ./vhdl/03-rca.vhd
-./vhdl/04-ACC.vhd
+./vhdl/04-p4_adder.core/04.1-ha.vhd
+./vhdl/04-p4_adder.core/04.2-pg.vhd
+./vhdl/04-p4_adder.core/04.3-pg_network.vhd
+./vhdl/04-p4_adder.core/04.4-generator.vhd
+./vhdl/04-p4_adder.core/04.5-carryselect_block.vhd
+./vhdl/04-p4_adder.core/04.6-carryselect_row.vhd
+./vhdl/04-p4_adder.core/04.7-carry_generator.vhd
+./vhdl/04-p4_adder.vhd
+./vhdl/05-ACC.vhd
 ./vhdl/a.a-CU_HW.core/forwarder.vhd
 ./vhdl/a.a-CU_HW.vhd
 ./vhdl/a.b-Datapath.core/a.b.a-fetch_stage.core/a.b.a.a-PC_ACC.vhd
@@ -65,14 +75,8 @@ set vhdfiles {
 ./vhdl/a.b-Datapath.core/a.b.a-fetch_stage.core/a.b.a.c-bpu_v3_BHT.vhd
 ./vhdl/a.b-Datapath.core/a.b.a-fetch_stage.vhd
 ./vhdl/a.b-Datapath.core/a.b.b-registerfile.vhd
-./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.a-arithmetic_unit.core/a.b.c.a.a-p4_adder.core/a.b.c.a.a.a-ha.vhd
-./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.a-arithmetic_unit.core/a.b.c.a.a-p4_adder.core/a.b.c.a.a.b-pg.vhd
-./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.a-arithmetic_unit.core/a.b.c.a.a-p4_adder.core/a.b.c.a.a.c-pg_network.vhd
-./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.a-arithmetic_unit.core/a.b.c.a.a-p4_adder.core/a.b.c.a.a.d-generator.vhd
-./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.a-arithmetic_unit.core/a.b.c.a.a-p4_adder.core/a.b.c.a.a.e-carryselect_block.vhd
-./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.a-arithmetic_unit.core/a.b.c.a.a-p4_adder.core/a.b.c.a.a.f-carryselect_row.vhd
-./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.a-arithmetic_unit.core/a.b.c.a.a-p4_adder.core/a.b.c.a.a.g-carry_generator.vhd
-./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.a-arithmetic_unit.core/a.b.c.a.a-p4_adder.vhd
+./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.a-arithmetic_unit.core/a.b.c.a.b-boothmul.core/a.b.c.a.b.a-booth_encoder.vhd
+./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.a-arithmetic_unit.core/a.b.c.a.b-boothmul.vhd
 ./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.a-arithmetic_unit.vhd
 ./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.b-logic_unit.vhd
 ./vhdl/a.b-Datapath.core/a.b.c-ALU.core/a.b.c.c-shifter_generic.vhd
@@ -84,7 +88,7 @@ set vhdfiles {
 ./vhdl/a-DLX.vhd
 }
 
-analyze -library WORK -format vhdl $vhdfiles
+analyze -library WORK -format vhdl $vhdfiles  ;#check whether each entity is synthesizable or not.
 
 #2) ...and compile/maintain the following by hand -.- (there's no automatic way to choose the right architecture in files that have several, unless we establish a convention about the order in which architectures are specified - e.g. first architecture in the source file gets used).
 #Dictionary containing (entity, architecture) pairs; note there's only one chosen architecture to be synthesized for each of the entities.
