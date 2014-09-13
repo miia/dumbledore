@@ -35,3 +35,4 @@ command.log
 transcript
 modelsim.ini
 docs/
+syn/DLX.v
