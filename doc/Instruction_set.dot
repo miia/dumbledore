@@ -1,0 +1,110 @@
+#Generate graph with dot
+digraph ISET {
+  rankdir=LR
+  size="7.5,10"
+  ratio=fill
+  node [style="rounded,filled", width=0, height=0, shape=box]
+  set -> r;
+  r [label="R-TYPE"];
+  set -> i;
+  i [ label="I-TYPE"];
+  set -> j;
+  j [label="J-TYPE"];
+  set -> nop;
+#R-type subdivision
+  r -> ra;
+  ra [label="Arithmetics"]
+  r -> rl;
+  rl [label="Logic"]
+  r -> rc;
+  rc [label="Compare/Set"]
+  rc -> rcs;
+  rcs [label="Signed"]
+  rc -> rcu;
+  rcu [label="Unsigned"]
+
+#I-type subdivision
+  i -> ia;
+  ia [label="Arithmetics"]
+  i -> il;
+  il [label="Logic"]
+  i -> ic;
+  ic [label="Compare/Set"]
+  ic -> ics;
+  ics [label="Signed"]
+  ic -> icu;
+  icu [label="Unsigned"]
+  i -> m;
+  m [label="Memory access"]
+  m -> ml;
+  ml [label="Load"]
+  m -> ms;
+  ms [label="Store"]
+
+#J-type subdivision
+  j -> aj;
+  aj [label="Unconditioned"];
+  j -> b;
+  b [label="Branch"];
+
+#Instructions in pdf-table order
+  aj -> jmp;
+  jmp [label="j"]
+  aj -> jal;
+  aj -> jr;
+  aj -> jalr;
+  b -> beqz;
+  b -> bnez;
+  ia -> addi;
+  ia -> addui;
+  ia -> subi;
+  ia -> subui;
+  il -> andi;
+  il -> ori;
+  il -> xori;
+  ia -> lhi;
+  ia -> slli;
+  ia -> srli;
+  ia -> srai;
+  ics -> seqi;
+  ics -> snei;
+  ics -> slti;
+  ics -> sgti;
+  ics -> slei;
+  ics -> sgei;
+  ml -> lb;
+  ml -> lh;
+  ml -> lw;
+  ml -> lbu;
+  ml -> lhu;
+  ms -> sb;
+  ms -> sh;
+  ms -> sw;
+  icu -> sltui;
+  icu -> sgtui;
+  icu -> sleui;
+  icu -> sgeui;
+
+  ra -> sll;
+  ra -> srl;
+  ra -> sra;
+  ra -> add;
+  ra -> addu;
+  ra -> sub;
+  ra -> subu;
+  rl -> and;
+  rl -> or;
+  rl -> xor;
+  rcs -> seq;
+  rcs -> sne;
+  rcs -> slt;
+  rcs -> sgt;
+  rcs -> sle;
+  rcs -> sge;
+  rcu -> sltu;
+  rcu -> sgtu;
+  rcu -> sleu;
+  rcu -> sgeu;
+
+}
+

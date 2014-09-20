@@ -1,0 +1,15 @@
+digraph {
+  nt [label="Not taken"]
+  wnt [label="Weak NT"]
+  wt [label="Weak T"]
+  t [label="Taken"]
+  nt -> nt [label="0"]
+  nt -> wnt [label="1"]
+  wnt -> nt [label="0"]
+  wnt -> wt [label="1"]
+  wt -> t [label="1"]
+  wt -> wnt [label="0"]
+  t -> t [label="1"]
+  t -> wt [label="0"]
+}
+
