@@ -29,4 +29,4 @@ This is achieved by using a multiplexer at the BHT output, and a demultiplexer a
 ## Inside the BHT: implementation of the BHT rows
 Each row of the BHT is implemented as a tiny Finite State Machine, where the State Register is just two bits wide, and the State transition function (the combinational logic deciding the next state according to current state and inputs) is composed of two simple boolean functions that can be computed using a Karnaugh map; there isn't even an output transition function, because incidentally the output of the FSM is the most significant bit of its state.
 
-![State-transition diagram for the BPU *per-row* state-machine](./BPU_fsm.eps)
+![State-transition diagram for the BPU *per-row* state-machine](./BPU_fsm.pdf)

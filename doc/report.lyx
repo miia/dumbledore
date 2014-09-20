@@ -3,6 +3,9 @@
 \begin_document
 \begin_header
 \textclass report
+\begin_preamble
+\usepackage{graphicx}
+\end_preamble
 \use_default_options false
 \maintain_unincluded_children false
 \language english
@@ -68,7 +71,7 @@ status open
 
 
 \backslash
-include{intro.md}
+include{0-intro}
 \end_layout
 
 \end_inset
@@ -91,7 +94,7 @@ status open
 
 
 \backslash
-include{CU.md}
+include{1-CU}
 \end_layout
 
 \end_inset
@@ -114,7 +117,7 @@ status open
 
 
 \backslash
-include{BPU.md}
+include{2-BPU}
 \end_layout
 
 \end_inset
@@ -137,7 +140,7 @@ status open
 
 
 \backslash
-include{fetch_stage.md}
+include{3-fetch_stage}
 \end_layout
 
 \end_inset
@@ -160,7 +163,7 @@ status open
 
 
 \backslash
-include{forwarding.md}
+include{4-forwarding}
 \end_layout
 
 \end_inset
