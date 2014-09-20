@@ -32,7 +32,7 @@ puts -nonewline "Using advanced options: "
 if {[string match "" $ADVANCED_OPTS] == 1} { puts "\[none\]" } else {puts $ADVANCED_OPTS}
 
 #actual optimization (loops with several different constraints)
-for {set i 3} {$i <= 10} {incr i} {
+for {set i 2} {$i <= 10} {incr i} {
   #load result of previous pre-synthesis of DLX design (result was exported in a .ddc file) 
   read_file -format ddc results/DLX.ddc
 
@@ -40,10 +40,14 @@ for {set i 3} {$i <= 10} {incr i} {
   puts "Compiling with primary constraint of ${i}ns clock period and 2nd constraint of minimum possible power..."
   create_clock -period $i [get_ports CLK]		;#set timing constraint on clock period
   set_max_total_power 0.0 mW				;#find the minimum possible power that still meets the timing constraint; area will follow as third parameter (=> recover area only where it comes absolutely for free)
+
   set command "compile -exact_map $ADVANCED_OPTS"
   eval $command 					;#perform optimized compilation again
+
   puts "Generating report for ${i}ns clock (and minimum possible power)"
-  do_reports "DLX_${i}ns_minpower"
+  set filename "DLX_${i}ns_minpower"
+  if {$CG == 1} {append filename "_CG"}
+  do_reports $filename
 }
 
 
