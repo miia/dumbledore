@@ -22,7 +22,7 @@ Unfortunately, the resulting layout has a large negative slack of -12ns, due to 
 
 This means that the clock frequency of the final design can go up to 50MHz (around 20ns clock period).
 
-Timing results could greatly be improved by either
+Timing results could greatly be improved by either:
 
 - explicitly guiding the placement of the memory block near to the ALU output;
 - repeating physical layout starting from a synthesis result targeted for 2ns; this would start from a version more aggressively optimized for timing, and even with the delays introduced by Encounter, 8ns should be within reach (although total power consumption would surely be increased).
