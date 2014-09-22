@@ -10,13 +10,21 @@ After the synthesis stage, physical layout was performed using Cadence Encounter
 
 Results of the layout phase are attached to this report.
 
+![CTS (clock tree distribution)](clock_tree_synthesis/clock_tree_show_distribution.png)
+
+![CTS (clock tree phase delay)](clock_tree_synthesis/clock_tree_phase_delay.png)
+
+![Final layout of processor core](encounter_pictures/screenshot_complete.png)
+
 ## Critical path ##
 
-Unfortunately, the resulting layout has a large negative slack of -12ns, due to the fact that the placement tool placed the Data Memory very far from the ALU output register (and thus creating a very long critical path);
+Unfortunately, the resulting layout has a large negative slack of -12ns, due to the fact that the placement tool placed the Data Memory very far from the ALU output register (as it can be seen from the attached Encounter post-route timing report);
+
+This means that the clock frequency of the final design can go up to 50MHz (around 20ns clock period).
 
 Timing results could greatly be improved by either
 
-- explicitly guiding the placement of the memory block near to the ALU output TODO-footnote
+- explicitly guiding the placement of the memory block near to the ALU output;
 - repeating physical layout starting from a synthesis result targeted for 2ns; this would start from a version more aggressively optimized for timing, and even with the delays introduced by Encounter, 8ns should be within reach (although total power consumption would surely be increased).
 
 

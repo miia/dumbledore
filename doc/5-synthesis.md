@@ -30,6 +30,8 @@ The attached TCL script "pareto_2d" was used for this purpose; its algorithm is 
 
 Data were extracted from the reports using the bash script extract_data_from_reports.sh, and plotted using gnuplot; this allowed to trace the Pareto curve shown in figure TODO.
 
+![Pareto curve - clock period VS total power](./pareto.pdf)
+
 ## A note about the max capacitance / max fanout constraints ##
 
 Since the "reset" net obiously has a high fanout, the script allows to set a constraint on the maximum fanout or the maximum load capacitance of the net; Design Compiler will then insert buffers along the interconnects to ensure the constraints are met.
@@ -49,5 +51,5 @@ This issue is known as *clock tree balancing*, and the main problem is that buff
 
 In order to achieve this, Design Compiler is instructed not to insert any buffer on the clock net (as it will be taken care of later during the layout phase); moreover, since the "untouched" clock net would have a very large delay, DC is configured not to count it in any timing report or optimization cost function.
 
-This is done by using the command create_clock in pareto_2d.tcl (which internally calls set_dont_touch e set_ideal_net, as well as setting the actual timing constraint).
+This is done by the create_clock command issued in pareto_2d.tcl (which internally calls set_dont_touch e set_ideal_net, as well as setting the actual timing constraint).
 
