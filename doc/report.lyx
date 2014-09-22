@@ -1,11 +1,12 @@
-#LyX 2.1 created this file. For more info see http://www.lyx.org/
-\lyxformat 474
+#LyX 2.0 created this file. For more info see http://www.lyx.org/
+\lyxformat 413
 \begin_document
 \begin_header
 \textclass report
 \begin_preamble
 \usepackage{graphicx}
 \usepackage{hyperref}
+\usepackage{epsfig}
 \end_preamble
 \use_default_options false
 \maintain_unincluded_children false
@@ -16,13 +17,13 @@
 \font_roman default
 \font_sans default
 \font_typewriter default
-\font_math auto
 \font_default_family default
 \use_non_tex_fonts false
 \font_sc false
 \font_osf false
 \font_sf_scale 100
 \font_tt_scale 100
+
 \graphics default
 \default_output_format default
 \output_sync 0
@@ -33,24 +34,15 @@
 \use_hyperref false
 \papersize default
 \use_geometry false
-\use_package amsmath 1
-\use_package amssymb 1
-\use_package cancel 1
-\use_package esint 1
-\use_package mathdots 0
-\use_package mathtools 1
-\use_package mhchem 0
-\use_package stackrel 1
-\use_package stmaryrd 1
-\use_package undertilde 1
+\use_amsmath 1
+\use_esint 1
+\use_mhchem 0
+\use_mathdots 0
 \cite_engine basic
-\cite_engine_type default
-\biblio_style plain
 \use_bibtopic false
 \use_indices false
 \paperorientation portrait
 \suppress_date false
-\justification true
 \use_refstyle 0
 \index Index
 \shortcut idx
@@ -104,7 +96,7 @@ status open
 
 
 \backslash
-include{0.1-scheme}
+include{1-CU}
 \end_layout
 
 \end_inset
@@ -112,7 +104,7 @@ include{0.1-scheme}
 
 \begin_inset CommandInset label
 LatexCommand label
-name "introduction-1"
+name "control-unit"
 
 \end_inset
 
@@ -127,7 +119,7 @@ status open
 
 
 \backslash
-include{1-CU}
+include{0.1-scheme}
 \end_layout
 
 \end_inset
@@ -135,7 +127,7 @@ include{1-CU}
 
 \begin_inset CommandInset label
 LatexCommand label
-name "control-unit"
+name "scheme"
 
 \end_inset
 
@@ -219,7 +211,7 @@ status open
 
 
 \backslash
-include{7-conclusions}
+include{5-synthesis}
 \end_layout
 
 \end_inset
@@ -227,7 +219,30 @@ include{7-conclusions}
 
 \begin_inset CommandInset label
 LatexCommand label
-name "forwarding-1"
+name "synthesis"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+include{6-physical_layout}
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "physical_layout"
 
 \end_inset
 
