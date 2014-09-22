@@ -10,8 +10,8 @@ A simple benchmark for this CPU is contained into the file *software/test_sqrt.a
 
 
 
-As shown in figure [1], this performance improvements are worthless if the CPU can't be fed appropriately.
+As shown in figure [8], this performance improvements are worthless if the CPU can't be fed appropriately.
 
 ![New frontiers for tail-recursive computing][1]
 
-[1]: ./cat.jpg "New frontiers for tail-recursive computing"
+[8]: ./cat.jpg "New frontiers for tail-recursive computing"

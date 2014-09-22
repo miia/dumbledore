@@ -28,9 +28,9 @@ The attached TCL script "pareto_2d" was used for this purpose; its algorithm is 
 - in this way, each iteration obtains a new Pareto point on the timing-power plane.+;
 - timing, power and area reports are generated for every synthesis run.
 
-Data were extracted from the reports using the bash script extract_data_from_reports.sh, and plotted using gnuplot; this allowed to trace the Pareto curve shown in figure TODO.
+Data were extracted from the reports using the bash script extract_data_from_reports.sh, and plotted using gnuplot; this allowed to trace the Pareto curve shown in figure [4].
 
-![Pareto curve - clock period VS total power](./pareto.pdf)
+![Optimization curve for various synthesis constraints] [4]
 
 ## A note about the max capacitance / max fanout constraints ##
 
@@ -53,3 +53,4 @@ In order to achieve this, Design Compiler is instructed not to insert any buffer
 
 This is done by the create_clock command issued in pareto_2d.tcl (which internally calls set_dont_touch e set_ideal_net, as well as setting the actual timing constraint).
 
+[4]: ./pareto.pdf "Optimization curve for various parameters of the synthesis"
