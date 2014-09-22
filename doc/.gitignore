@@ -1,3 +1,5 @@
 *.eps
+*.tex
 *.svg
 *.pdf
+*.log
