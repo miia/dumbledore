@@ -4,7 +4,7 @@ all:
 	epstopdf BPU_fsm.eps
 	epstopdf Instruction_set.eps
 	for file in ./*.md ; do \
-		pandoc -f markdown -t latex $$file -o $${file%???}.tex -M author="Simone Baratta" -M author="Michele Iacobone" --chapters -V "geometry:margin=1.5in" ; \
+		pandoc -f markdown -t latex $$file -o $${file%???}.tex -M author="Simone Baratta" -M author="Michele Iacobone" -V "geometry:margin=1.5in" ; \
 	done
 	lyx --export pdf2 report.lyx
 	xdg-open report.pdf

@@ -1,7 +1,7 @@
 #Generate graph with dot
 digraph ISET {
   rankdir=LR
-  size="7.5,10"
+  size="4,8"
   ratio=fill
   node [style="rounded,filled", width=0, height=0, shape=box]
   set -> r;
