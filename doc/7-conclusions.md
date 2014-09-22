@@ -10,7 +10,7 @@ A simple benchmark for this CPU is contained into the file *software/test_sqrt.a
 
 
 
-As shown in figure [8], this performance improvements are worthless if the CPU can't be fed appropriately.
+As shown in figure [8], these architectural improvements may give sub-optimal results if the CPU isn't fed appropriately.
 
 
 \newpage
