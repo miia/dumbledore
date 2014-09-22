@@ -96,7 +96,7 @@ status open
 
 
 \backslash
-include{1-CU}
+include{0.1-scheme}
 \end_layout
 
 \end_inset
@@ -104,7 +104,7 @@ include{1-CU}
 
 \begin_inset CommandInset label
 LatexCommand label
-name "control-unit"
+name "scheme"
 
 \end_inset
 
@@ -119,7 +119,7 @@ status open
 
 
 \backslash
-include{0.1-scheme}
+include{1-CU}
 \end_layout
 
 \end_inset
@@ -127,7 +127,7 @@ include{0.1-scheme}
 
 \begin_inset CommandInset label
 LatexCommand label
-name "scheme"
+name "control-unit"
 
 \end_inset
 
