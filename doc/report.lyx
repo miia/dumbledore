@@ -249,5 +249,28 @@ name "physical_layout"
 
 \end_layout
 
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+include{7-conclusions}
+\end_layout
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "conclusions"
+
+\end_inset
+
+
+\end_layout
+
 \end_body
 \end_document

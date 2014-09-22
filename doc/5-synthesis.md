@@ -2,6 +2,21 @@
 
 Once simulation yielded satisfactory results, synthesis was performed using Synopsys design Compiler; several different synthesis runs were performed starting from the same RTL netlist, and each time different constraints were imposed.
 
+## Critical path analysis ##
+
+First of all, a tentative synthesis and a quick critical path analysis was performed, to spot strongly unbalanced paths.
+
+A large critical path was found in the following route:
+- the old Program Counter value is output from the PC output register,
+- goes to the BPU,
+- passes through the corresponding BHT line, which predicts *taken*,
+- the *taken* prediction, in turn, causes the multiplexer inside the PC accumulator to select the *immediate* input and feed it into the PC accumulator
+- and the new Program Counter value is computed using the Ripple-Carry Adder inside the accumulator (which is actually responsible for most of the delay).
+
+Such a critical path was largely due to the type of adder used within the PC accumulator: once the RCA was swapped with a P4 adder and synthesis was repeated, the critical path was different and much closer to the delay of the less-critical paths.
+
+## Synthesis script ##
+
 The attached TCL script "pareto_2d" was used for this purpose; its algorithm is fully documented in code comments, but at a high level it works in the following way:
 
 - a loop selects the constraint for the clock period;
@@ -10,9 +25,10 @@ The attached TCL script "pareto_2d" was used for this purpose; its algorithm is 
     - it is possible to choose a different wire load model from the default (a less optimistic one has been used in order to partially compensate for the layout phase);
     - clock gating is deactivated by default.
 - for each iteration (each one aiming at a different target clock period), some slack is left while optimizing timing; all this slack is used in a second optimization run, to minimize power consumption (i.e., try to obtain the best possible timing, then use all the available slack to optimize power as much as possible, until there is no more slack).
-- in this way, each iteration obtains a new Pareto point on the timing-power plane.
+- in this way, each iteration obtains a new Pareto point on the timing-power plane.+;
+- timing, power and area reports are generated for every synthesis run.
 
-This allowed to trace the Pareto curve shown in figure TODO.
+Data were extracted from the reports using the bash script extract_data_from_reports.sh, and plotted using gnuplot; this allowed to trace the Pareto curve shown in figure TODO.
 
 ## A note about the max capacitance / max fanout constraints ##
 

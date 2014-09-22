@@ -17,7 +17,7 @@ The usual compromise is to have 2^k rows in the BHT, and then index each row by 
 Of course, this solution introduces a tradeoff between the BHT size and the possibility of collisions between different branch instructions that end up sharing the same row of the BPU; choosing a higher value of k will result in a bigger BHT, but it will decrease the chance of collisions (up to the point where k=CODE_ADDRESS_SIZE makes this possibility 0% ).
 
 
-## IMPLEMENTATION ##
+## Implementation ##
 
 To implement a BPU based on a BHT, two things must be taken into consideration: the BPU must have a way to output its prediction when a branch instruction enters the pipeline, and then it must have a way to receive the actual branch result and use it to "update" its knowledge regarding that particular branch.
 
@@ -26,7 +26,7 @@ This is achieved by using a multiplexer at the BHT output, and a demultiplexer a
 - whenever a prediction is requested for a certain branch instruction, the output of the corresponding BHT row is simply selected in the output multiplexer;
 - three cycles later, when the branch instruction actually passes through the ALU and the branch condition is evaluated, the outcome of the branch (either Taken or Not Taken) is sent back to the BPU; here, the BPU receives the branch outcome through the input demultiplexer, together with a signal that activates the corresponding BHT row and allows it to update its state; the demultiplexer routes the branch outcome and the activation signal to the appropriate BHT row, since it kept track of which BHT row was used three cycles before.
 
-## Inside the BHT: implementation of the BHT rows
+## Inside the BHT: implementation of the BHT rows ##
 Each row of the BHT is implemented as a tiny Finite State Machine, where the State Register is just two bits wide, and the State transition function (the combinational logic deciding the next state according to current state and inputs) is composed of two simple boolean functions that can be computed using a Karnaugh map; there isn't even an output transition function, because incidentally the output of the FSM is the most significant bit of its state.
 
 ![State-transition diagram for the BPU *per-row* state-machine](./BPU_fsm.pdf)
