@@ -1,5 +1,5 @@
 ;Initialization
-addi R1, R0, 25; -- X
+addi R1, R0, 38; -- X
 slli R1, R1, 16; -- X << 16 (fixed point)
 srli R2, R1, 8; -- N
 xor R3, R3, R3; -- OLDN

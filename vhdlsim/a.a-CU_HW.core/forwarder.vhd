@@ -26,21 +26,24 @@ ENTITY FORWARDER IS
     CLK: in std_logic;
     RESET: in std_logic;
     IR: in INSTRUCTION;
+    FLUSH_PIPELINE: in std_logic;
     SELECT_RIGHTA: out std_logic_vector(1 downto 0);
     SELECT_RIGHTB: out std_logic_vector(1 downto 0)
+
   );
 END FORWARDER;
 
 ARCHITECTURE STRUCTURAL OF FORWARDER IS
   SIGNAL D2, D1, SA, SB, D: REG_ADDRESS;
   SIGNAL ir_is_rtype, ir_is_jal: std_logic;
-  SIGNAL ir_is_notwriting, ir_was_notwriting, ir_was_notwriting2: std_logic;
+  SIGNAL ir_is_notwriting, ir_is_notwriting_raw, ir_was_notwriting, ir_was_notwriting2: std_logic;
   SIGNAL d_itype: REG_ADDRESS;
 BEGIN
   --Takes informations about the current instruction in order to execute it 
   ir_is_rtype <= '1' when opcodeof(IR)=OPCODE_RTYPE else '0';
   --If the instruction is a notwriting, the destination register has another purpose -> IGNORE IT!
-  ir_is_notwriting <= '0' when does_not_write(opcodeof(IR)) else '1'; -- This value is active-low so that upon a reset the instructions will not be touched
+  ir_is_notwriting_raw <= '0' when does_not_write(opcodeof(IR)) else '1'; -- This value is active-low so that upon a reset the instructions will not be touched
+  ir_is_notwriting <= ir_is_notwriting_raw and (not FLUSH_PIPELINE);
   --A JAL has implicit R31 as destination register
   ir_is_jal <= '1' when opcodeof(IR)=OPCODE_JAL or opcodeof(IR)=OPCODE_JALR else '0';
   select_jal: ENTITY work.MUX21_GENERIC

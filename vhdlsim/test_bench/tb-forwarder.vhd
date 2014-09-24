@@ -14,7 +14,7 @@ BEGIN
   CLK <= not CLK after 10 ns;
   RESET <= '1' after 15 ns;
   toTest: entity work.FORWARDER
-  PORT MAP(CLK => CLK, RESET => RESET, IR => IR, SELECT_RIGHTA => SELECT_RIGHTA, SELECT_RIGHTB => SELECT_RIGHTB);
+  PORT MAP(CLK => CLK, RESET => RESET, IR => IR, SELECT_RIGHTA => SELECT_RIGHTA, SELECT_RIGHTB => SELECT_RIGHTB, FLUSH_PIPELINE => '0');
 process begin
   IR <= x"00002020";
   wait for 30 ns; -- Instruction  will arrive always on clock edges from the fetch unit, so we align to this

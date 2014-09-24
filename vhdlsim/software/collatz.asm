@@ -16,7 +16,7 @@
 ;Even => 1
 ;Stop
 
-addi r1, r0, 6  ;initial value for n
+addi r1, r0, 49  ;initial value for n
 
 add r30, r1, r0 ;output current value of n
 j check_exit_condition ;check for corner case: we might start with n already ==1
@@ -28,7 +28,7 @@ andi r2, r1, 1 ;r2 contains only LSB of n
 bnez r2, n_is_odd ;LSB(n)==1 means that n is currently odd
 
 n_is_even:
-srli r1, r1, 2 ; divide n by 2, and get n/2. NOTE: this is only executed is n is even => shifting left is enough to divide by 2, because result will always be integer anyway.
+srli r1, r1, 1 ; divide n by 2, and get n/2. NOTE: this is only executed is n is even => shifting left is enough to divide by 2, because result will always be integer anyway.
 j check_exit_condition
 
 ;else, n is odd: get 3*n+1
